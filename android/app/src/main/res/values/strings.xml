@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Zara To-Do</string>
+    <string name="title_activity_main">Zara To-Do</string>
+    <string name="package_name">com.zara.todo</string>
+    <string name="custom_url_scheme">com.zara.todo</string>
+</resources>
