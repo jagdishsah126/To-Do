@@ -5,6 +5,9 @@
 
 ```
 Capacitor/
+├── .github/
+│   └── workflows/
+│       └── build-apk.yml              # Automated cloud compilation of Android debug APK
 ├── capacitor.config.ts                # Capacitor native configuration (appId, appName, webDir, plugins)
 ├── android/                           # Generated native Android Studio & Gradle project
 ├── public/
