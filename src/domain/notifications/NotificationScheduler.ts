@@ -37,6 +37,9 @@ export async function initNotificationEngine(): Promise<void> {
 
   if (Capacitor.isNativePlatform()) {
     try {
+      // 0. Ensure Android 13+ notification permission is requested
+      await LocalNotifications.requestPermissions()
+
       // 1. Create Android Notification Channel
       await LocalNotifications.createChannel({
         id: 'zara_tasks',
@@ -142,26 +145,36 @@ export async function scheduleNotification(opts: ScheduleOptions): Promise<void>
   // 1. Native Capacitor Android Path (Runs even when app is killed or locked!)
   if (Capacitor.isNativePlatform()) {
     try {
-      const scheduleAt = delayMs > 0 ? new Date(reminderTimestamp) : new Date(now + 500)
+      const notificationItem: {
+        id: number
+        title: string
+        body: string
+        channelId: string
+        actionTypeId: string
+        extra: { occurrenceId: string }
+        schedule?: { at: Date; allowWhileIdle: boolean }
+      } = {
+        id: notificationId,
+        title: series.title,
+        body,
+        channelId: 'zara_tasks',
+        actionTypeId: 'TASK_ACTIONS',
+        extra: {
+          occurrenceId: occurrence.id,
+        },
+      }
+
+      if (delayMs > 0) {
+        notificationItem.schedule = {
+          at: new Date(reminderTimestamp),
+          allowWhileIdle: true,
+        }
+      }
+
       await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: notificationId,
-            title: series.title,
-            body,
-            schedule: {
-              at: scheduleAt,
-              allowWhileIdle: true, // Uses Android AlarmManager.setExactAndAllowWhileIdle!
-            },
-            channelId: 'zara_tasks',
-            actionTypeId: 'TASK_ACTIONS',
-            extra: {
-              occurrenceId: occurrence.id,
-            },
-          },
-        ],
+        notifications: [notificationItem],
       })
-      console.log(`[Scheduler] Native notification scheduled for "${series.title}" at ${scheduleAt.toISOString()}`)
+      console.log(`[Scheduler] Native notification scheduled for "${series.title}"`)
       return
     } catch (err) {
       console.warn('[Scheduler] Capacitor schedule failed, falling back to web timers:', err)

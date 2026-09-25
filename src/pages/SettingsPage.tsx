@@ -3,7 +3,9 @@ import { useSettingsStore } from '../store/settingsStore'
 import { useUIStore } from '../store/uiStore'
 import { useTaskStore } from '../store/taskStore'
 import { haptic } from '../utils/haptics'
-import { requestPermission, getPermissionStatus } from '../domain/notifications/PermissionManager'
+import { Capacitor } from '@capacitor/core'
+import { LocalNotifications } from '@capacitor/local-notifications'
+import { requestPermission, checkPermission, getPermissionStatus } from '../domain/notifications/PermissionManager'
 import { detectCapabilities } from '../domain/notifications/CapabilityDetector'
 import { exportBackupJSON, importBackupJSON } from '../services/backupService'
 import type { NotificationCapabilities } from '../types'
@@ -20,10 +22,12 @@ export const SettingsPage: React.FC = () => {
   const [isStandalone, setIsStandalone] = useState(false)
 
   useEffect(() => {
+    checkPermission().then(setPermStatus)
     detectCapabilities().then(setCapabilities)
 
-    // Check standalone mode
+    // Check standalone / native mode
     const standalone =
+      Capacitor.isNativePlatform() ||
       window.matchMedia('(display-mode: standalone)').matches ||
       // @ts-expect-error iOS Safari
       window.navigator.standalone === true
@@ -49,6 +53,34 @@ export const SettingsPage: React.FC = () => {
 
   const handleSendTestNotification = async () => {
     haptic.heavy()
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const perm = await LocalNotifications.requestPermissions()
+        setPermStatus(perm.display === 'granted' ? 'granted' : 'denied')
+        if (perm.display !== 'granted') {
+          setTestStatus(`Permission status: ${perm.display} (Please allow notifications)`)
+          return
+        }
+
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 99999,
+              title: '🧪 Zara Native Notification Test',
+              body: 'Native Android notifications are working! 🌸',
+              channelId: 'zara_tasks',
+              actionTypeId: 'TASK_ACTIONS',
+              extra: { occurrenceId: 'test-ping' },
+            },
+          ],
+        })
+        setTestStatus('Native notification triggered! Check status bar 🔔')
+      } catch (err) {
+        setTestStatus(`Native Error: ${String(err)}`)
+      }
+      return
+    }
+
     if (!('serviceWorker' in navigator)) {
       setTestStatus('Service Worker not supported')
       return

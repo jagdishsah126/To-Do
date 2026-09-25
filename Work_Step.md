@@ -562,28 +562,29 @@ The project is complete when a user can:
 ---
 
 ## 🚀 Capacitor Native Android Migration
-- [ ] **C.1** Create `/home/jagdish/Desktop/Sandbox/Zara/To_Do/Capacitor` directory and copy project files
-- [ ] **C.2** Initialize Capacitor config (`capacitor.config.ts` for Android)
-- [ ] **C.3** Migrate notification scheduler to `@capacitor/local-notifications` with native alarms, channels & actions
-- [ ] **C.4** Integrate live countdown timer (`TaskCountdown.tsx`) beside tasks in `TodayPage.tsx`
-- [ ] **C.5** Add Android native platform (`npx cap add android`) & test build
-- [ ] **C.6** Configure Git repository in `Capacitor/` and stage clean project for GitHub push
+- [x] **C.1** Create `/home/jagdish/Desktop/Sandbox/Zara/To_Do/Capacitor` directory and copy project files
+- [x] **C.2** Initialize Capacitor config (`capacitor.config.ts` for Android)
+- [x] **C.3** Migrate notification scheduler to `@capacitor/local-notifications` with native alarms, channels & actions
+- [x] **C.4** Integrate live countdown timer (`TaskCountdown.tsx`) beside tasks in `TodayPage.tsx`
+- [x] **C.5** Add Android native platform (`npx cap add android`) & test build
+- [x] **C.6** Configure Git repository in `Capacitor/`, add GitHub Actions CI workflow, and push to GitHub
 
 ---
 
 ## 🚦 Current Status
 
 ```
-Capacitor Migration & Android Notifications 🔄 In Progress
-Today Tab Task Countdown Timer              🔄 In Progress
-Phase 1  — Foundation                       ✅ Completed
-Phase 2  — Core Task System                 ✅ Completed
-Phase 3  — Views                            ✅ Completed
-Phase 4  — Recurrence Engine                ✅ Completed (8/8 unit tests passing)
-Phase 5  — Native Mobile Setup (Capacitor)   🔄 Transitioning from PWA
-Phase 6  — Native Notifications             🔄 Transitioning to Capacitor LocalNotifications
-Phase 7  — Advanced Features                🔄 In Progress
-Phase 8  — Settings                         🔄 In Progress
-Phase 9  — Testing & Hardening              ⬜ Pending
-Phase 10 — V2 Stable Release                ⬜ Pending
+Capacitor Migration & Android Native Setup   ✅ Completed
+Today Tab Task Countdown Timer               ✅ Completed
+GitHub Actions Cloud APK Compilation         ✅ Completed
+Phase 1  — Foundation                        ✅ Completed
+Phase 2  — Core Task System                  ✅ Completed
+Phase 3  — Views                             ✅ Completed
+Phase 4  — Recurrence Engine                 ✅ Completed (8/8 unit tests passing)
+Phase 5  — Native Mobile Setup (Capacitor)    ✅ Completed
+Phase 6  — Native Notifications (Android)    ✅ Completed
+Phase 7  — Advanced Features                 🔄 In Progress
+Phase 8  — Settings                          🔄 In Progress
+Phase 9  — Testing & Hardening               🔄 In Progress
+Phase 10 — V2 Stable Release                 ⬜ Pending
 ```

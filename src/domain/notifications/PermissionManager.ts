@@ -73,7 +73,9 @@ export async function requestPermission(): Promise<PermissionStatus> {
 
 export function isGranted(): boolean {
   if (Capacitor.isNativePlatform()) {
-    return cachedStatus === 'granted'
+    // On Android, LocalNotifications.schedule automatically requests permission if needed,
+    // so do not block unless explicitly denied by the user.
+    return cachedStatus !== 'denied'
   }
   return getPermissionStatus() === 'granted'
 }
@@ -84,3 +86,4 @@ export function isDenied(): boolean {
   }
   return getPermissionStatus() === 'denied'
 }
+
