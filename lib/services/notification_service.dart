@@ -2,9 +2,15 @@ import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:personal_todo/domain/app_settings.dart';
 import 'package:personal_todo/domain/task.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+
+typedef NotificationActionHandler = Future<void> Function(
+  String actionId,
+  String? taskId,
+);
 
 class NotificationService {
   NotificationService();
@@ -12,22 +18,32 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  // New channel id so phones that already installed v1 get lock-screen capable settings.
   static const _channelId = 'task_reminders_lockscreen';
   static const _channelName = 'Task reminders';
   static const _channelDescription =
       'Reminders for scheduled tasks (shown on lock screen)';
 
-  bool _ready = false;
+  static const actionComplete = 'complete';
+  static const actionSnooze = 'snooze';
+  static const actionSkip = 'skip';
 
-  Future<void> init() async {
+  bool _ready = false;
+  NotificationActionHandler? onAction;
+
+  Future<void> init({NotificationActionHandler? actionHandler}) async {
+    onAction = actionHandler;
     tzdata.initializeTimeZones();
     await _configureLocalTimezone();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidInit);
 
-    await _plugin.initialize(initSettings);
+    await _plugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (response) async {
+        await onAction?.call(response.actionId ?? 'tap', response.payload);
+      },
+    );
 
     final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -67,11 +83,9 @@ class NotificationService {
     return notificationsEnabled;
   }
 
-  int notificationIdForTask(String taskId) {
-    return taskId.hashCode & 0x7fffffff;
-  }
+  int notificationIdForTask(String taskId) => taskId.hashCode & 0x7fffffff;
 
-  AndroidNotificationDetails get _androidDetails => const AndroidNotificationDetails(
+  AndroidNotificationDetails get _androidDetails => AndroidNotificationDetails(
         _channelId,
         _channelName,
         channelDescription: _channelDescription,
@@ -83,27 +97,70 @@ class NotificationService {
         playSound: true,
         enableVibration: true,
         ticker: 'Task reminder',
+        actions: <AndroidNotificationAction>[
+          const AndroidNotificationAction(
+            actionComplete,
+            'Complete',
+            showsUserInterface: false,
+          ),
+          const AndroidNotificationAction(
+            actionSnooze,
+            'Snooze',
+            showsUserInterface: false,
+          ),
+          const AndroidNotificationAction(
+            actionSkip,
+            'Skip',
+            showsUserInterface: false,
+          ),
+        ],
       );
 
-  Future<void> scheduleTaskReminder(Task task) async {
+  DateTime _applyQuietHours(DateTime when, AppSettings settings) {
+    if (!settings.quietHoursEnabled) return when;
+
+    final minutes = when.hour * 60 + when.minute;
+    final start = settings.quietStartMinute;
+    final end = settings.quietEndMinute;
+
+    bool inQuiet;
+    if (start < end) {
+      inQuiet = minutes >= start && minutes < end;
+    } else {
+      inQuiet = minutes >= start || minutes < end;
+    }
+    if (!inQuiet) return when;
+
+    // Push to quiet end same day or next day.
+    final endHour = end ~/ 60;
+    final endMinute = end % 60;
+    var adjusted = DateTime(when.year, when.month, when.day, endHour, endMinute);
+    if (!adjusted.isAfter(when)) {
+      adjusted = adjusted.add(const Duration(days: 1));
+    }
+    return adjusted;
+  }
+
+  Future<void> scheduleTaskReminder(Task task, {AppSettings? settings}) async {
     if (!_ready) return;
     if (task.isCompleted) return;
+    if (settings != null && !settings.notificationsEnabled) return;
 
-    final when = task.scheduledAt;
-    if (!when.isAfter(DateTime.now())) {
-      return;
+    var when = task.reminderAt;
+    if (settings != null) {
+      when = _applyQuietHours(when, settings);
     }
+    if (!when.isAfter(DateTime.now())) return;
 
-    final id = notificationIdForTask(task.id);
     final scheduled = tz.TZDateTime.from(when, tz.local);
-
     await _plugin.zonedSchedule(
-      id,
+      notificationIdForTask(task.id),
       task.title,
       task.description.isEmpty ? 'Task reminder' : task.description,
       scheduled,
       NotificationDetails(android: _androidDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: task.id,
     );
   }
 
@@ -112,16 +169,20 @@ class NotificationService {
     await _plugin.cancel(notificationIdForTask(taskId));
   }
 
-  /// Quick device test: fires a notification after [seconds].
+  Future<void> rescheduleAll(List<Task> tasks, AppSettings settings) async {
+    for (final task in tasks) {
+      await cancelTaskReminder(task.id);
+      await scheduleTaskReminder(task, settings: settings);
+    }
+  }
+
   Future<void> scheduleTestNotification({int seconds = 10}) async {
     if (!_ready) return;
-
     final when = tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds));
-
     await _plugin.zonedSchedule(
       999001,
       'Test reminder',
-      'Lock-screen notification test. If you see this while locked, it works.',
+      'Lock-screen notification test.',
       when,
       NotificationDetails(android: _androidDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

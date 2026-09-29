@@ -1,28 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:personal_todo/core/bs_date.dart';
 import 'package:personal_todo/data/task_repository.dart';
+import 'package:personal_todo/domain/app_settings.dart';
+import 'package:personal_todo/domain/category.dart';
 import 'package:personal_todo/domain/task.dart';
+import 'package:personal_todo/features/common/task_actions.dart';
+import 'package:personal_todo/features/common/task_tile.dart';
 import 'package:personal_todo/features/task_editor/task_editor_page.dart';
 import 'package:personal_todo/services/notification_service.dart';
 
 class TodayPage extends StatefulWidget {
   const TodayPage({
     super.key,
-    required this.repository,
+    required this.tasks,
+    required this.categories,
     required this.notifications,
+    required this.settings,
+    required this.onChanged,
+    this.onOpenSearch,
   });
 
-  final TaskRepository repository;
+  final TaskRepository tasks;
+  final CategoryRepository categories;
   final NotificationService notifications;
+  final AppSettings settings;
+  final VoidCallback onChanged;
+  final VoidCallback? onOpenSearch;
 
   @override
   State<TodayPage> createState() => _TodayPageState();
 }
 
 class _TodayPageState extends State<TodayPage> {
-  late Future<List<Task>> _tasksFuture;
-  final _timeFormat = DateFormat('h:mm a');
-  final _dateFormat = DateFormat('EEE, d MMM yyyy');
+  late Future<List<Task>> _future;
+  Map<String, Category> _categoryMap = {};
 
   @override
   void initState() {
@@ -30,91 +41,66 @@ class _TodayPageState extends State<TodayPage> {
     _reload();
   }
 
-  void _reload() {
+  Future<void> _reload() async {
+    final cats = await widget.categories.getAll();
     setState(() {
-      _tasksFuture = widget.repository.getTasksForDay(DateTime.now());
+      _categoryMap = {for (final c in cats) c.id: c};
+      _future = widget.tasks.getTasksForDay(DateTime.now());
     });
   }
 
-  Future<void> _openEditor() async {
-    final created = await Navigator.of(context).push<bool>(
+  Future<void> _add() async {
+    final ok = await Navigator.push<bool>(
+      context,
       MaterialPageRoute(
         builder: (_) => TaskEditorPage(
-          repository: widget.repository,
+          tasks: widget.tasks,
+          categories: widget.categories,
           notifications: widget.notifications,
+          settings: widget.settings,
         ),
       ),
     );
-
-    if (created == true && mounted) {
-      _reload();
+    if (ok == true) {
+      await _reload();
+      widget.onChanged();
     }
-  }
-
-  Future<void> _toggleComplete(Task task) async {
-    if (task.isCompleted) {
-      await widget.repository.markUpcoming(task.id);
-      await widget.notifications.scheduleTaskReminder(
-        task.copyWith(status: TaskStatus.upcoming),
-      );
-    } else {
-      await widget.repository.markCompleted(task.id);
-      await widget.notifications.cancelTaskReminder(task.id);
-    }
-    _reload();
-  }
-
-  Future<void> _deleteTask(Task task) async {
-    await widget.notifications.cancelTaskReminder(task.id);
-    await widget.repository.deleteTask(task.id);
-    _reload();
-  }
-
-  Future<void> _testNotification() async {
-    final allowed = await widget.notifications.requestPermission();
-    if (!mounted) return;
-
-    if (!allowed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Notification permission denied. Enable it in phone settings.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    await widget.notifications.scheduleTestNotification(seconds: 10);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Test in 10s. Lock the phone now. If nothing shows: Settings → Apps → Personal Todo → Notifications → allow Lock screen.',
-        ),
-        duration: Duration(seconds: 8),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final todayLabel = _dateFormat.format(DateTime.now());
+    final label = BsDateHelper.formatTaskDate(
+      DateTime.now(),
+      mode: widget.settings.dateDisplay,
+      withTime: false,
+      use24Hour: widget.settings.use24HourClock,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Today'),
         actions: [
+          if (widget.onOpenSearch != null)
+            IconButton(
+              tooltip: 'Search',
+              onPressed: widget.onOpenSearch,
+              icon: const Icon(Icons.search),
+            ),
           IconButton(
-            tooltip: 'Test notification (10s)',
-            onPressed: _testNotification,
+            tooltip: 'Test notification',
+            onPressed: () async {
+              await widget.notifications.requestPermission();
+              await widget.notifications.scheduleTestNotification();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Test notification in 10 seconds. Lock phone now.'),
+                ),
+              );
+            },
             icon: const Icon(Icons.notifications_active_outlined),
           ),
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _reload,
-            icon: const Icon(Icons.refresh),
-          ),
+          IconButton(onPressed: _reload, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: Column(
@@ -122,85 +108,54 @@ class _TodayPageState extends State<TodayPage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Text(
-              todayLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            child: Text(label, style: Theme.of(context).textTheme.titleMedium),
           ),
           Expanded(
             child: FutureBuilder<List<Task>>(
-              future: _tasksFuture,
+              future: _future,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'Could not load tasks.\n${snapshot.error}',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                }
-
-                final tasks = snapshot.data ?? const <Task>[];
+                final tasks = snapshot.data ?? [];
                 if (tasks.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'No tasks for today.\nTap + to add one.\n\nUse the bell icon to test notifications.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
+                  return const Center(child: Text('No tasks for today.'));
                 }
+                final overdue = tasks
+                    .where(
+                      (t) =>
+                          t.isActive && t.scheduledAt.isBefore(DateTime.now()),
+                    )
+                    .toList();
+                final remaining = tasks
+                    .where(
+                      (t) =>
+                          t.isActive && !t.scheduledAt.isBefore(DateTime.now()),
+                    )
+                    .toList();
+                final done = tasks.where((t) => t.isCompleted).toList();
 
-                return ListView.separated(
+                return ListView(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 88),
-                  itemCount: tasks.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    return Dismissible(
-                      key: ValueKey(task.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        color: Theme.of(context).colorScheme.error,
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      onDismissed: (_) => _deleteTask(task),
-                      child: Card(
-                        child: ListTile(
-                          leading: Checkbox(
-                            value: task.isCompleted,
-                            onChanged: (_) => _toggleComplete(task),
-                          ),
-                          title: Text(
-                            task.title,
-                            style: TextStyle(
-                              decoration: task.isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : TextDecoration.none,
-                            ),
-                          ),
-                          subtitle: Text(
-                            [
-                              _timeFormat.format(task.scheduledAt),
-                              if (task.description.isNotEmpty) task.description,
-                            ].join(' · '),
-                          ),
-                          onTap: () => _toggleComplete(task),
-                        ),
-                      ),
-                    );
-                  },
+                  children: [
+                    if (overdue.isNotEmpty) ...[
+                      const Text('OVERDUE',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      ...overdue.map((t) => _tile(t)),
+                      const SizedBox(height: 12),
+                    ],
+                    if (remaining.isNotEmpty) ...[
+                      const Text('TODAY',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      ...remaining.map((t) => _tile(t)),
+                      const SizedBox(height: 12),
+                    ],
+                    if (done.isNotEmpty) ...[
+                      const Text('COMPLETED',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      ...done.map((t) => _tile(t)),
+                    ],
+                  ],
                 );
               },
             ),
@@ -208,10 +163,51 @@ class _TodayPageState extends State<TodayPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openEditor,
+        onPressed: _add,
         icon: const Icon(Icons.add),
         label: const Text('Add Task'),
       ),
+    );
+  }
+
+  Widget _tile(Task task) {
+    return TaskTile(
+      task: task,
+      settings: widget.settings,
+      category:
+          task.categoryId == null ? null : _categoryMap[task.categoryId!],
+      onToggleComplete: () async {
+        await TaskActions.toggleComplete(
+          context: context,
+          tasks: widget.tasks,
+          notifications: widget.notifications,
+          settings: widget.settings,
+          task: task,
+        );
+        await _reload();
+        widget.onChanged();
+      },
+      onOpen: () async {
+        await TaskActions.openSheet(
+          context: context,
+          tasks: widget.tasks,
+          categories: widget.categories,
+          notifications: widget.notifications,
+          settings: widget.settings,
+          task: task,
+        );
+        await _reload();
+        widget.onChanged();
+      },
+      onDelete: () async {
+        await TaskActions.delete(
+          tasks: widget.tasks,
+          notifications: widget.notifications,
+          task: task,
+        );
+        await _reload();
+        widget.onChanged();
+      },
     );
   }
 }

@@ -1,35 +1,28 @@
 # Personal Todo — Flutter Mobile App
 
-This repository was reset. The previous **Vite / React / PWA / Capacitor** codebase was removed.
+Offline-first personal todo & reminder app for Android.
 
-## Current contents
+## Features in this build (v1.1)
 
-| File | Purpose |
-| --- | --- |
-| [`Plan.md`](./Plan.md) | Product scope, features, Flutter tech decision |
-| [`Process.md`](./Process.md) | How to build it in Flutter (architecture, phases, notifications) |
+* Today / Upcoming / BS Calendar tabs
+* Create, edit, delete tasks
+* Complete / Skip / Snooze / Reschedule
+* Priority + categories
+* Recurrence: daily, weekdays, weekly, selected weekdays, monthly, yearly
+* Local SQLite storage
+* BS date display (AD stored internally)
+* Scheduled local notifications + lock-screen support
+* Notification actions: Complete / Snooze / Skip
+* Quiet hours + missed-task policy
+* Theme / date display / reminder defaults
+* Search
+* Export / import JSON backup
 
-## Why the reset
-
-PWA reminders were unreliable when the app was closed. The project is now **Flutter, Android-first, offline/local-first**, with native local notifications.
-
-## Current app (V0.2)
-
-Flutter Android app with:
-
-* Today screen
-* Add task (title, description, date, time)
-* Complete / uncomplete
-* Swipe to delete
-* Local SQLite storage (survives app restart)
-* Local scheduled notifications at task time
-* Bell icon → test notification in 10 seconds
-
-Not yet: BS calendar, recurrence, settings, notification actions.
-
-### Build in Codespace
+## Build in Codespace
 
 ```bash
+cd /workspaces/To-Do
+git pull origin main
 export ANDROID_HOME=$HOME/Android/Sdk
 export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
 flutter pub get
@@ -38,9 +31,7 @@ flutter build apk --debug
 
 APK: `build/app/outputs/flutter-apk/app-debug.apk`
 
-## Principles (short)
+## Docs
 
-- Offline first, local SQLite, no account/backend in V1
-- AD dates internally, **BS** calendar for display
-- Reliable native reminders (not browser notifications)
-- Mobile only — no website / PWA target
+* [`Plan.md`](./Plan.md) — product scope
+* [`Process.md`](./Process.md) — Flutter implementation process
