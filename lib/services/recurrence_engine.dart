@@ -17,7 +17,8 @@ class RecurrenceEngine {
       case RecurrenceType.weekly:
         return from.add(Duration(days: 7 * (rule.interval <= 0 ? 1 : rule.interval)));
       case RecurrenceType.selectedWeekdays:
-        final days = rule.weekdays.isEmpty ? const [from.weekday] : rule.weekdays;
+        final days =
+            rule.weekdays.isEmpty ? <int>[from.weekday] : List<int>.from(rule.weekdays);
         return _nextWeekday(from, days);
       case RecurrenceType.monthly:
         return _addMonths(from, rule.interval <= 0 ? 1 : rule.interval);
