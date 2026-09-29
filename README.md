@@ -13,18 +13,28 @@ This repository was reset. The previous **Vite / React / PWA / Capacitor** codeb
 
 PWA reminders were unreliable when the app was closed. The project is now **Flutter, Android-first, offline/local-first**, with native local notifications.
 
-## What is not here yet
+## Current app (V0.1 foundation)
 
-There is **no Flutter app source** in this commit yet — only the plan and process docs.
+Flutter Android app with:
 
-Next step (on a machine/Codespace with enough disk):
+* Today screen
+* Add task (title, description, date, time)
+* Complete / uncomplete
+* Swipe to delete
+* Local SQLite storage (survives app restart)
+
+Not yet: BS calendar, notifications, recurrence, settings.
+
+### Build in Codespace
 
 ```bash
-flutter create . --org com.jagdish.todo --project-name personal_todo
-# then implement from Process.md
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+flutter pub get
+flutter build apk --debug
 ```
 
-Or develop in **GitHub Codespaces** / a remote VM, build an APK, and install it on your Android phone.
+APK: `build/app/outputs/flutter-apk/app-debug.apk`
 
 ## Principles (short)
 
