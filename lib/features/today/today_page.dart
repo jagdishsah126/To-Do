@@ -3,11 +3,17 @@ import 'package:intl/intl.dart';
 import 'package:personal_todo/data/task_repository.dart';
 import 'package:personal_todo/domain/task.dart';
 import 'package:personal_todo/features/task_editor/task_editor_page.dart';
+import 'package:personal_todo/services/notification_service.dart';
 
 class TodayPage extends StatefulWidget {
-  const TodayPage({super.key, required this.repository});
+  const TodayPage({
+    super.key,
+    required this.repository,
+    required this.notifications,
+  });
 
   final TaskRepository repository;
+  final NotificationService notifications;
 
   @override
   State<TodayPage> createState() => _TodayPageState();
@@ -33,7 +39,10 @@ class _TodayPageState extends State<TodayPage> {
   Future<void> _openEditor() async {
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => TaskEditorPage(repository: widget.repository),
+        builder: (_) => TaskEditorPage(
+          repository: widget.repository,
+          notifications: widget.notifications,
+        ),
       ),
     );
 
@@ -45,15 +54,44 @@ class _TodayPageState extends State<TodayPage> {
   Future<void> _toggleComplete(Task task) async {
     if (task.isCompleted) {
       await widget.repository.markUpcoming(task.id);
+      await widget.notifications.scheduleTaskReminder(
+        task.copyWith(status: TaskStatus.upcoming),
+      );
     } else {
       await widget.repository.markCompleted(task.id);
+      await widget.notifications.cancelTaskReminder(task.id);
     }
     _reload();
   }
 
   Future<void> _deleteTask(Task task) async {
+    await widget.notifications.cancelTaskReminder(task.id);
     await widget.repository.deleteTask(task.id);
     _reload();
+  }
+
+  Future<void> _testNotification() async {
+    final allowed = await widget.notifications.requestPermission();
+    if (!mounted) return;
+
+    if (!allowed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Notification permission denied. Enable it in phone settings.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    await widget.notifications.scheduleTestNotification(seconds: 10);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Test notification scheduled in 10 seconds. Lock phone or leave app.'),
+      ),
+    );
   }
 
   @override
@@ -64,6 +102,11 @@ class _TodayPageState extends State<TodayPage> {
       appBar: AppBar(
         title: const Text('Today'),
         actions: [
+          IconButton(
+            tooltip: 'Test notification (10s)',
+            onPressed: _testNotification,
+            icon: const Icon(Icons.notifications_active_outlined),
+          ),
           IconButton(
             tooltip: 'Refresh',
             onPressed: _reload,
@@ -107,7 +150,7 @@ class _TodayPageState extends State<TodayPage> {
                     child: Padding(
                       padding: EdgeInsets.all(24),
                       child: Text(
-                        'No tasks for today.\nTap + to add one.',
+                        'No tasks for today.\nTap + to add one.\n\nUse the bell icon to test notifications.',
                         textAlign: TextAlign.center,
                       ),
                     ),

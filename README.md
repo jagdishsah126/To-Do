@@ -13,7 +13,7 @@ This repository was reset. The previous **Vite / React / PWA / Capacitor** codeb
 
 PWA reminders were unreliable when the app was closed. The project is now **Flutter, Android-first, offline/local-first**, with native local notifications.
 
-## Current app (V0.1 foundation)
+## Current app (V0.2)
 
 Flutter Android app with:
 
@@ -22,8 +22,10 @@ Flutter Android app with:
 * Complete / uncomplete
 * Swipe to delete
 * Local SQLite storage (survives app restart)
+* Local scheduled notifications at task time
+* Bell icon → test notification in 10 seconds
 
-Not yet: BS calendar, notifications, recurrence, settings.
+Not yet: BS calendar, recurrence, settings, notification actions.
 
 ### Build in Codespace
 

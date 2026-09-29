@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:personal_todo/data/task_repository.dart';
 import 'package:personal_todo/features/today/today_page.dart';
+import 'package:personal_todo/services/notification_service.dart';
 
 class TodoApp extends StatelessWidget {
-  const TodoApp({super.key, required this.repository});
+  const TodoApp({
+    super.key,
+    required this.repository,
+    required this.notifications,
+  });
 
   final TaskRepository repository;
+  final NotificationService notifications;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +28,10 @@ class TodoApp extends StatelessWidget {
           border: OutlineInputBorder(),
         ),
       ),
-      home: TodayPage(repository: repository),
+      home: TodayPage(
+        repository: repository,
+        notifications: notifications,
+      ),
     );
   }
 }

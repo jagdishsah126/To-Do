@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:personal_todo/data/task_repository.dart';
+import 'package:personal_todo/services/notification_service.dart';
 
 class TaskEditorPage extends StatefulWidget {
-  const TaskEditorPage({super.key, required this.repository});
+  const TaskEditorPage({
+    super.key,
+    required this.repository,
+    required this.notifications,
+  });
 
   final TaskRepository repository;
+  final NotificationService notifications;
 
   @override
   State<TaskEditorPage> createState() => _TaskEditorPageState();
@@ -25,9 +31,9 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
+    final now = DateTime.now().add(const Duration(minutes: 2));
     _date = DateTime(now.year, now.month, now.day);
-    _time = TimeOfDay(hour: now.hour, minute: (now.minute ~/ 5) * 5);
+    _time = TimeOfDay(hour: now.hour, minute: now.minute);
   }
 
   @override
@@ -74,12 +80,26 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
 
     setState(() => _saving = true);
     try {
-      await widget.repository.createTask(
+      await widget.notifications.requestPermission();
+
+      final task = await widget.repository.createTask(
         title: _titleController.text,
         description: _descriptionController.text,
         scheduledAt: _scheduledAt,
       );
+
+      final isFuture = _scheduledAt.isAfter(DateTime.now());
+      if (isFuture) {
+        await widget.notifications.scheduleTaskReminder(task);
+      }
+
       if (!mounted) return;
+
+      final message = isFuture
+          ? 'Task saved. Reminder set for ${_dateFormat.format(_date)} ${_time.format(context)}.'
+          : 'Task saved. No reminder (time is in the past). Pick a future time.';
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
@@ -138,6 +158,11 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
                 trailing: const Icon(Icons.schedule),
                 onTap: _pickTime,
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Reminder fires at this date/time. Use a time a few minutes ahead to test.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: _saving ? null : _save,
@@ -149,11 +174,6 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
                       )
                     : const Icon(Icons.check),
                 label: Text(_saving ? 'Saving...' : 'Save Task'),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Dates are stored in AD for now. BS calendar display comes next.',
-                style: TextStyle(fontSize: 12),
               ),
             ],
           ),
