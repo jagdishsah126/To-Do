@@ -12,9 +12,11 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const _channelId = 'task_reminders';
+  // New channel id so phones that already installed v1 get lock-screen capable settings.
+  static const _channelId = 'task_reminders_lockscreen';
   static const _channelName = 'Task reminders';
-  static const _channelDescription = 'Reminders for scheduled tasks';
+  static const _channelDescription =
+      'Reminders for scheduled tasks (shown on lock screen)';
 
   bool _ready = false;
 
@@ -34,7 +36,10 @@ class NotificationService {
         _channelId,
         _channelName,
         description: _channelDescription,
-        importance: Importance.high,
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
       ),
     );
 
@@ -46,7 +51,6 @@ class NotificationService {
       final name = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(name));
     } catch (_) {
-      // Nepal default for this project if device timezone lookup fails.
       tz.setLocalLocation(tz.getLocation('Asia/Kathmandu'));
     }
   }
@@ -67,6 +71,20 @@ class NotificationService {
     return taskId.hashCode & 0x7fffffff;
   }
 
+  AndroidNotificationDetails get _androidDetails => const AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.max,
+        priority: Priority.max,
+        category: AndroidNotificationCategory.alarm,
+        visibility: NotificationVisibility.public,
+        fullScreenIntent: true,
+        playSound: true,
+        enableVibration: true,
+        ticker: 'Task reminder',
+      );
+
   Future<void> scheduleTaskReminder(Task task) async {
     if (!_ready) return;
     if (task.isCompleted) return;
@@ -79,21 +97,12 @@ class NotificationService {
     final id = notificationIdForTask(task.id);
     final scheduled = tz.TZDateTime.from(when, tz.local);
 
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDescription,
-      importance: Importance.high,
-      priority: Priority.high,
-      category: AndroidNotificationCategory.reminder,
-    );
-
     await _plugin.zonedSchedule(
       id,
       task.title,
       task.description.isEmpty ? 'Task reminder' : task.description,
       scheduled,
-      const NotificationDetails(android: androidDetails),
+      NotificationDetails(android: _androidDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
@@ -108,20 +117,13 @@ class NotificationService {
     if (!_ready) return;
 
     final when = tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds));
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDescription,
-      importance: Importance.high,
-      priority: Priority.high,
-    );
 
     await _plugin.zonedSchedule(
       999001,
       'Test reminder',
-      'Notifications are working on this phone.',
+      'Lock-screen notification test. If you see this while locked, it works.',
       when,
-      const NotificationDetails(android: androidDetails),
+      NotificationDetails(android: _androidDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }

@@ -89,7 +89,10 @@ class _TodayPageState extends State<TodayPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Test notification scheduled in 10 seconds. Lock phone or leave app.'),
+        content: Text(
+          'Test in 10s. Lock the phone now. If nothing shows: Settings → Apps → Personal Todo → Notifications → allow Lock screen.',
+        ),
+        duration: Duration(seconds: 8),
       ),
     );
   }
