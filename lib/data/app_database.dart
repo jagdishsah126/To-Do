@@ -156,56 +156,73 @@ class AppDatabase {
   }
 
   Future<void> _upgradeToV3(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS tags (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        color_value INTEGER NOT NULL DEFAULT 4278193402
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS task_tags (
-        task_id TEXT NOT NULL,
-        tag_id TEXT NOT NULL,
-        PRIMARY KEY (task_id, tag_id)
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS subtasks (
-        id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
-        title TEXT NOT NULL,
-        is_completed INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS task_notes (
-        id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS attachments (
-        id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
-        file_name TEXT NOT NULL,
-        file_path TEXT NOT NULL,
-        file_size INTEGER NOT NULL DEFAULT 0,
-        mime_type TEXT NOT NULL DEFAULT '',
-        created_at TEXT NOT NULL
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS task_dependencies (
-        task_id TEXT NOT NULL,
-        depends_on_task_id TEXT NOT NULL,
-        PRIMARY KEY (task_id, depends_on_task_id)
-      )
-    ''');
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table'",
+    );
+    final existing = tables.map((r) => r['name'] as String).toSet();
+
+    if (!existing.contains('tags')) {
+      await db.execute('''
+        CREATE TABLE tags (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          color_value INTEGER NOT NULL DEFAULT 4278193402
+        )
+      ''');
+    }
+    if (!existing.contains('task_tags')) {
+      await db.execute('''
+        CREATE TABLE task_tags (
+          task_id TEXT NOT NULL,
+          tag_id TEXT NOT NULL,
+          PRIMARY KEY (task_id, tag_id)
+        )
+      ''');
+    }
+    if (!existing.contains('subtasks')) {
+      await db.execute('''
+        CREATE TABLE subtasks (
+          id TEXT PRIMARY KEY,
+          task_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          is_completed INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (!existing.contains('task_notes')) {
+      await db.execute('''
+        CREATE TABLE task_notes (
+          id TEXT PRIMARY KEY,
+          task_id TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT
+        )
+      ''');
+    }
+    if (!existing.contains('attachments')) {
+      await db.execute('''
+        CREATE TABLE attachments (
+          id TEXT PRIMARY KEY,
+          task_id TEXT NOT NULL,
+          file_name TEXT NOT NULL,
+          file_path TEXT NOT NULL,
+          file_size INTEGER NOT NULL DEFAULT 0,
+          mime_type TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (!existing.contains('task_dependencies')) {
+      await db.execute('''
+        CREATE TABLE task_dependencies (
+          task_id TEXT NOT NULL,
+          depends_on_task_id TEXT NOT NULL,
+          PRIMARY KEY (task_id, depends_on_task_id)
+        )
+      ''');
+    }
   }
 
   Future<void> _seedCategories(Database db) async {
