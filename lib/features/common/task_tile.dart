@@ -82,7 +82,7 @@ class _TaskTileState extends State<TaskTile> {
     final diff = widget.task.scheduledAt.difference(now);
     if (diff.isNegative) return Colors.red;
     if (diff.inHours < 1) return Colors.orange;
-    if (diff.inHours < 3) return Colors.amber.sh700;
+    if (diff.inHours < 3) return Colors.amber.shade700;
     return Colors.green;
   }
 
