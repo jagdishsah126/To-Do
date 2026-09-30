@@ -111,7 +111,13 @@ class _TodayPageState extends State<TodayPage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Text(label, style: Theme.of(context).textTheme.titleMedium),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
           ),
           Expanded(
             child: FutureBuilder<List<Task>>(
@@ -122,7 +128,12 @@ class _TodayPageState extends State<TodayPage> {
                 }
                 final tasks = snapshot.data ?? [];
                 if (tasks.isEmpty) {
-                  return const Center(child: Text('No tasks for today.'));
+                  return Center(
+                    child: Text(
+                      'No tasks for today.',
+                      style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                    ),
+                  );
                 }
                 final overdue = tasks
                     .where(
@@ -142,17 +153,17 @@ class _TodayPageState extends State<TodayPage> {
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 88),
                   children: [
                     if (overdue.isNotEmpty) ...[
-                      _sectionHeader('OVERDUE', Colors.red),
+                      _sectionHeader('OVERDUE', const Color(0xFFFF4757)),
                       ...overdue.map((t) => _tile(t)),
                       const SizedBox(height: 12),
                     ],
                     if (remaining.isNotEmpty) ...[
-                      _sectionHeader('TODAY', const Color(0xFF1F6F5F)),
+                      _sectionHeader('TODAY', const Color(0xFF00D4AA)),
                       ...remaining.map((t) => _tile(t)),
                       const SizedBox(height: 12),
                     ],
                     if (done.isNotEmpty) ...[
-                      _sectionHeader('COMPLETED', Colors.grey),
+                      _sectionHeader('COMPLETED', Colors.white38),
                       ...done.map((t) => _tile(t)),
                     ],
                   ],

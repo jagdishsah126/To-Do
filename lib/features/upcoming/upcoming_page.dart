@@ -77,7 +77,12 @@ class _UpcomingPageState extends State<UpcomingPage> {
           }
           final tasks = snapshot.data ?? [];
           if (tasks.isEmpty) {
-            return const Center(child: Text('No upcoming tasks.'));
+            return Center(
+              child: Text(
+                'No upcoming tasks.',
+                style: TextStyle(color: Colors.white.withOpacity(0.5)),
+              ),
+            );
           }
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
