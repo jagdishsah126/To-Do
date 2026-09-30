@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:personal_todo/core/bs_date.dart';
 import 'package:personal_todo/data/task_repository.dart';
+import 'package:personal_todo/domain/enums.dart';
 import 'package:personal_todo/domain/task.dart';
 
 class HistoryPage extends StatefulWidget {

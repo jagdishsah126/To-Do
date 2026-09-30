@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:personal_todo/core/bs_date.dart';
 import 'package:personal_todo/data/task_repository.dart';
 import 'package:personal_todo/domain/app_settings.dart';
+import 'package:personal_todo/domain/enums.dart';
 import 'package:personal_todo/domain/task.dart';
 
 class StatisticsPage extends StatefulWidget {
@@ -141,7 +142,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _statRow(String label, num value) {
+  Widget _statRow(String label, dynamic value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(

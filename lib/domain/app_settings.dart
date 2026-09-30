@@ -117,8 +117,8 @@ class AppSettings {
       fontSize: double.tryParse(map['fontSize'] ?? '1.0') ?? 1.0,
       streaksEnabled: (map['streaksEnabled'] ?? 'true') == 'true',
       backupReminderEnabled: (map['backupReminderEnabled'] ?? 'true') == 'true',
-      lastBackupTimestamp: map['lastBackupTimestamp'] != null && map['lastBackupTimestamp'].isNotEmpty
-          ? DateTime.tryParse(map['lastBackupTimestamp'])
+      lastBackupTimestamp: map['lastBackupTimestamp'] != null && (map['lastBackupTimestamp'] ?? '').isNotEmpty
+          ? DateTime.tryParse(map['lastBackupTimestamp']!)
           : null,
       carryForwardPolicy: CarryForwardPolicy.fromStorage(map['carryForwardPolicy'] ?? 'keepOverdue'),
     );
