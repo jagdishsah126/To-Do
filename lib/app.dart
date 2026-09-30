@@ -91,6 +91,7 @@ class _TodoAppState extends State<TodoApp> {
       notifications: widget.notifications,
       backup: widget.backup,
       tasks: widget.tasks,
+      categories: widget.categories,
       settings: _settings,
       onSettingsChanged: (value) {
         setState(() => _settings = value);
@@ -108,24 +109,24 @@ class _TodoAppState extends State<TodoApp> {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF00D4AA),
-          brightness: Brightness.dark,
+          brightness: Brightness.light,
         ),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF0A0E1A),
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
         appBarTheme: const AppBarTheme(
           centerTitle: true,
           elevation: 0,
           scrolledUnderElevation: 0,
           backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
+          foregroundColor: Colors.black87,
         ),
         cardTheme: CardThemeData(
           elevation: 0,
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.08),
               width: 1,
             ),
           ),
@@ -133,31 +134,31 @@ class _TodoAppState extends State<TodoApp> {
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+            borderSide: BorderSide(color: Colors.black.withOpacity(0.2)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+            borderSide: BorderSide(color: Colors.black.withOpacity(0.1)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF00D4AA), width: 2),
           ),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.05),
+          fillColor: Colors.white,
         ),
         navigationBarTheme: NavigationBarThemeData(
           elevation: 0,
           backgroundColor: Colors.transparent,
           indicatorColor: const Color(0xFF00D4AA).withOpacity(0.2),
           labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(color: Colors.white70, fontSize: 12),
+            const TextStyle(color: Colors.black54, fontSize: 12),
           ),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const IconThemeData(color: Color(0xFF00D4AA));
             }
-            return const IconThemeData(color: Colors.white54);
+            return const IconThemeData(color: Colors.black38);
           }),
         ),
         floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -167,7 +168,7 @@ class _TodoAppState extends State<TodoApp> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         dividerTheme: DividerThemeData(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.black.withOpacity(0.1),
           thickness: 1,
         ),
         snackBarTheme: SnackBarThemeData(

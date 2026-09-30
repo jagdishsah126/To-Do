@@ -52,6 +52,7 @@ class _TaskTileState extends State<TaskTile> {
     final diff = widget.task.scheduledAt.difference(now);
 
     if (widget.task.isCompleted) {
+      _timer?.cancel();
       setState(() => _countdown = '');
       return;
     }

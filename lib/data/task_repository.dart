@@ -290,6 +290,23 @@ class CategoryRepository {
     return rows.map(Category.fromMap).toList();
   }
 
+  Future<void> create(Category category) async {
+    await (await _db).insert('categories', category.toMap());
+  }
+
+  Future<void> update(Category category) async {
+    await (await _db).update(
+      'categories',
+      category.toMap(),
+      where: 'id = ?',
+      whereArgs: [category.id],
+    );
+  }
+
+  Future<void> delete(String id) async {
+    await (await _db).delete('categories', where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<void> replaceAll(List<Category> categories) async {
     final db = await _db;
     await db.transaction((txn) async {

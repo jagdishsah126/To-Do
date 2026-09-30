@@ -11,6 +11,18 @@ class Category {
   final int colorValue;
   final int iconCodePoint;
 
+  Category copyWith({
+    String? name,
+    int? colorValue,
+    int? iconCodePoint,
+  }) =>
+      Category(
+        id: id,
+        name: name ?? this.name,
+        colorValue: colorValue ?? this.colorValue,
+        iconCodePoint: iconCodePoint ?? this.iconCodePoint,
+      );
+
   Map<String, Object?> toMap() => {
         'id': id,
         'name': name,

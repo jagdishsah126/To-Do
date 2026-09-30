@@ -41,6 +41,7 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
   TaskPriority _priority = TaskPriority.normal;
   RecurrenceType _recurrenceType = RecurrenceType.none;
   final Set<int> _weekdays = {};
+  int _recurrenceInterval = 1;
   int _reminderMinutes = 0;
   String? _categoryId;
   List<Category> _categories = [];
@@ -61,6 +62,7 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
       _priority = existing.priority;
       _recurrenceType = existing.recurrence.type;
       _weekdays.addAll(existing.recurrence.weekdays);
+      _recurrenceInterval = existing.recurrence.interval;
       _reminderMinutes = existing.reminderMinutesBefore;
       _categoryId = existing.categoryId;
     } else {
@@ -110,7 +112,7 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
   RecurrenceRule get _rule => RecurrenceRule(
         type: _recurrenceType,
         weekdays: _weekdays.toList()..sort(),
-        interval: 1,
+        interval: _recurrenceInterval,
       );
 
   Future<void> _save() async {
@@ -264,6 +266,23 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
                     .toList(),
                 onChanged: (v) => setState(() => _recurrenceType = v!),
               ),
+              if (_recurrenceType != RecurrenceType.none) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  initialValue: '$_recurrenceInterval',
+                  decoration: const InputDecoration(labelText: 'Every (interval)'),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    final n = int.tryParse(v ?? '');
+                    if (n == null || n < 1) return 'Must be at least 1';
+                    return null;
+                  },
+                  onChanged: (v) {
+                    final n = int.tryParse(v);
+                    if (n != null && n > 0) _recurrenceInterval = n;
+                  },
+                ),
+              ],
               if (_recurrenceType == RecurrenceType.selectedWeekdays) ...[
                 const SizedBox(height: 8),
                 Wrap(

@@ -3,8 +3,10 @@ import 'package:personal_todo/data/backup_service.dart';
 import 'package:personal_todo/data/settings_repository.dart';
 import 'package:personal_todo/data/task_repository.dart';
 import 'package:personal_todo/domain/app_settings.dart';
+import 'package:personal_todo/domain/category.dart';
 import 'package:personal_todo/domain/enums.dart';
 import 'package:personal_todo/services/notification_service.dart';
+import 'package:uuid/uuid.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -13,6 +15,7 @@ class SettingsPage extends StatefulWidget {
     required this.notifications,
     required this.backup,
     required this.tasks,
+    required this.categories,
     required this.settings,
     required this.onSettingsChanged,
   });
@@ -21,6 +24,7 @@ class SettingsPage extends StatefulWidget {
   final NotificationService notifications;
   final BackupService backup;
   final TaskRepository tasks;
+  final CategoryRepository categories;
   final AppSettings settings;
   final ValueChanged<AppSettings> onSettingsChanged;
 
@@ -30,11 +34,18 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late AppSettings _settings;
+  List<Category> _categories = [];
 
   @override
   void initState() {
     super.initState();
     _settings = widget.settings;
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final cats = await widget.categories.getAll();
+    if (mounted) setState(() => _categories = cats);
   }
 
   @override
@@ -147,6 +158,42 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged: (v) =>
                 _save(_settings.copyWith(quietHoursEnabled: v)),
           ),
+          if (_settings.quietHoursEnabled) ...[
+            ListTile(
+              title: const Text('Quiet start'),
+              subtitle: Text(_fmtMinute(_settings.quietStartMinute)),
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay(
+                    hour: _settings.quietStartMinute ~/ 60,
+                    minute: _settings.quietStartMinute % 60,
+                  ),
+                );
+                if (picked != null) {
+                  final minutes = picked.hour * 60 + picked.minute;
+                  await _save(_settings.copyWith(quietStartMinute: minutes));
+                }
+              },
+            ),
+            ListTile(
+              title: const Text('Quiet end'),
+              subtitle: Text(_fmtMinute(_settings.quietEndMinute)),
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay(
+                    hour: _settings.quietEndMinute ~/ 60,
+                    minute: _settings.quietEndMinute % 60,
+                  ),
+                );
+                if (picked != null) {
+                  final minutes = picked.hour * 60 + picked.minute;
+                  await _save(_settings.copyWith(quietEndMinute: minutes));
+                }
+              },
+            ),
+          ],
           ListTile(
             title: const Text('Missed task policy'),
             subtitle: Text(_settings.missedPolicy.name),
@@ -163,6 +210,49 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           ListTile(
+            title: const Text('Snooze options'),
+            subtitle: Text(_settings.snoozeMinutes.join(', ')),
+            onTap: () async {
+              final controller = TextEditingController(
+                text: _settings.snoozeMinutes.join(','),
+              );
+              final result = await showDialog<List<int>>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Snooze options (minutes)'),
+                  content: TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g. 5,10,15,30,60',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () {
+                        final values = controller.text
+                            .split(',')
+                            .map((e) => int.tryParse(e.trim()) ?? 0)
+                            .where((e) => e > 0 && e <= 1440)
+                            .toList();
+                        Navigator.pop(context, values);
+                      },
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              );
+              controller.dispose();
+              if (result != null && result.isNotEmpty) {
+                await _save(_settings.copyWith(snoozeMinutes: result));
+              }
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.notifications_active_outlined),
             title: const Text('Test notification (10s)'),
             onTap: () async {
@@ -173,6 +263,31 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SnackBar(content: Text('Scheduled. Lock phone now.')),
               );
             },
+          ),
+          const Divider(),
+          const ListTile(title: Text('Categories')),
+          ..._categories.map(
+            (c) => ListTile(
+              title: Text(c.name),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    onPressed: () => _editCategory(c),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 20),
+                    onPressed: () => _deleteCategory(c),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.add),
+            title: const Text('Add category'),
+            onTap: _addCategory,
           ),
           const Divider(),
           const ListTile(title: Text('Data')),
@@ -292,5 +407,94 @@ class _SettingsPageState extends State<SettingsPage> {
             .toList(),
       ),
     );
+  }
+
+  Future<void> _addCategory() async {
+    final nameController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add category'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(labelText: 'Category name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    if (result == true && nameController.text.trim().isNotEmpty) {
+      final category = Category(
+        id: const Uuid().v4(),
+        name: nameController.text.trim(),
+        colorValue: 0xFF1F6F5F,
+      );
+      await widget.categories.create(category);
+      await _loadCategories();
+    }
+    nameController.dispose();
+  }
+
+  Future<void> _editCategory(Category category) async {
+    final nameController = TextEditingController(text: category.name);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit category'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(labelText: 'Category name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (result == true && nameController.text.trim().isNotEmpty) {
+      await widget.categories.update(
+        category.copyWith(name: nameController.text.trim()),
+      );
+      await _loadCategories();
+    }
+    nameController.dispose();
+  }
+
+  Future<void> _deleteCategory(Category category) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete category?'),
+        content: Text('Delete "${category.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (result == true) {
+      await widget.categories.delete(category.id);
+      await _loadCategories();
+    }
   }
 }
