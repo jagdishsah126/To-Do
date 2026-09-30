@@ -111,8 +111,24 @@ class _TodoAppState extends State<TodoApp> {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF8FAF9),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+        ),
+        cardTheme: CardTheme(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(),
+          filled: true,
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          elevation: 3,
+          backgroundColor: Colors.white,
+          indicatorColor: const Color(0xFF1F6F5F).withOpacity(0.15),
         ),
       ),
       darkTheme: ThemeData(
@@ -121,12 +137,33 @@ class _TodoAppState extends State<TodoApp> {
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+        ),
+        cardTheme: CardTheme(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(),
+          filled: true,
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          elevation: 3,
+          indicatorColor: const Color(0xFF1F6F5F).withOpacity(0.25),
         ),
       ),
       home: Scaffold(
-        body: _pages[_index],
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: KeyedSubtree(
+            key: ValueKey(_index),
+            child: _pages[_index],
+          ),
+        ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),

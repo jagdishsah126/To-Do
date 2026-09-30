@@ -82,7 +82,7 @@ class _UpcomingPageState extends State<UpcomingPage> {
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
             itemCount: tasks.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 4),
             itemBuilder: (context, index) {
               final task = tasks[index];
               return TaskTile(

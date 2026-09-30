@@ -142,20 +142,17 @@ class _TodayPageState extends State<TodayPage> {
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 88),
                   children: [
                     if (overdue.isNotEmpty) ...[
-                      const Text('OVERDUE',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      _sectionHeader('OVERDUE', Colors.red),
                       ...overdue.map((t) => _tile(t)),
                       const SizedBox(height: 12),
                     ],
                     if (remaining.isNotEmpty) ...[
-                      const Text('TODAY',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      _sectionHeader('TODAY', const Color(0xFF1F6F5F)),
                       ...remaining.map((t) => _tile(t)),
                       const SizedBox(height: 12),
                     ],
                     if (done.isNotEmpty) ...[
-                      const Text('COMPLETED',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      _sectionHeader('COMPLETED', Colors.grey),
                       ...done.map((t) => _tile(t)),
                     ],
                   ],
@@ -169,6 +166,21 @@ class _TodayPageState extends State<TodayPage> {
         onPressed: _add,
         icon: const Icon(Icons.add),
         label: const Text('Add Task'),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: color,
+          fontSize: 13,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }

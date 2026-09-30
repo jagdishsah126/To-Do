@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:personal_todo/core/bs_date.dart';
 import 'package:personal_todo/domain/app_settings.dart';
@@ -5,7 +6,7 @@ import 'package:personal_todo/domain/category.dart';
 import 'package:personal_todo/domain/enums.dart';
 import 'package:personal_todo/domain/task.dart';
 
-class TaskTile extends StatelessWidget {
+class TaskTile extends StatefulWidget {
   const TaskTile({
     super.key,
     required this.task,
@@ -24,20 +25,82 @@ class TaskTile extends StatelessWidget {
   final Future<void> Function() onDelete;
 
   @override
+  State<TaskTile> createState() => _TaskTileState();
+}
+
+class _TaskTileState extends State<TaskTile> {
+  Timer? _timer;
+  String _countdown = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _updateCountdown();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) _updateCountdown();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _updateCountdown() {
+    final now = DateTime.now();
+    final diff = widget.task.scheduledAt.difference(now);
+
+    if (widget.task.isCompleted) {
+      setState(() => _countdown = '');
+      return;
+    }
+
+    if (diff.isNegative) {
+      final abs = -diff;
+      if (abs.inHours > 0) {
+        setState(() => _countdown = 'Overdue ${abs.inHours}h ${abs.inMinutes % 60}m');
+      } else {
+        setState(() => _countdown = 'Overdue ${abs.inMinutes}m');
+      }
+    } else {
+      if (diff.inDays > 0) {
+        setState(() => _countdown = '${diff.inDays}d ${diff.inHours % 24}h');
+      } else if (diff.inHours > 0) {
+        setState(() => _countdown = '${diff.inHours}h ${diff.inMinutes % 60}m');
+      } else if (diff.inMinutes > 0) {
+        setState(() => _countdown = '${diff.inMinutes}m ${diff.inSeconds % 60}s');
+      } else {
+        setState(() => _countdown = '${diff.inSeconds}s');
+      }
+    }
+  }
+
+  Color _countdownColor() {
+    if (widget.task.isCompleted) return Colors.grey;
+    final now = DateTime.now();
+    final diff = widget.task.scheduledAt.difference(now);
+    if (diff.isNegative) return Colors.red;
+    if (diff.inHours < 1) return Colors.orange;
+    if (diff.inHours < 3) return Colors.amber.sh700;
+    return Colors.green;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final subtitle = [
       BsDateHelper.formatTaskDate(
-        task.scheduledAt,
-        mode: settings.dateDisplay,
-        use24Hour: settings.use24HourClock,
+        widget.task.scheduledAt,
+        mode: widget.settings.dateDisplay,
+        use24Hour: widget.settings.use24HourClock,
       ),
-      if (category != null) category!.name,
-      if (task.recurrence.isRecurring) task.recurrence.type.label,
-      task.priority.label,
+      if (widget.category != null) widget.category!.name,
+      if (widget.task.recurrence.isRecurring) widget.task.recurrence.type.label,
+      widget.task.priority.label,
     ].join(' · ');
 
     return Dismissible(
-      key: ValueKey(task.id),
+      key: ValueKey(widget.task.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
@@ -46,17 +109,14 @@ class TaskTile extends StatelessWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (_) async {
-        await onDelete();
+        await widget.onDelete();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${task.title} deleted'),
+              content: Text('${widget.task.title} deleted'),
               action: SnackBarAction(
                 label: 'Undo',
-                onPressed: () async {
-                  // Note: Full undo would require storing the complete task
-                  // and re-inserting it. This is a simplified version.
-                },
+                onPressed: () async {},
               ),
               duration: const Duration(seconds: 5),
             ),
@@ -64,26 +124,65 @@ class TaskTile extends StatelessWidget {
         }
       },
       child: Card(
+        elevation: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: Checkbox(
-            value: task.isCompleted,
-            onChanged: (_) => onToggleComplete(),
+            value: widget.task.isCompleted,
+            onChanged: (_) => widget.onToggleComplete(),
+            activeColor: const Color(0xFF1F6F5F),
           ),
           title: Text(
-            task.title,
+            widget.task.title,
             style: TextStyle(
               decoration:
-                  task.isCompleted ? TextDecoration.lineThrough : null,
+                  widget.task.isCompleted ? TextDecoration.lineThrough : null,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
             ),
           ),
-          subtitle: Text(subtitle),
-          trailing: category == null
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+              if (_countdown.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _countdownColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _countdownColor().withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.timer_outlined, size: 14, color: _countdownColor()),
+                      const SizedBox(width: 4),
+                      Text(
+                        _countdown,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _countdownColor(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          trailing: widget.category == null
               ? null
               : CircleAvatar(
-                  radius: 8,
-                  backgroundColor: Color(category!.colorValue),
+                  radius: 10,
+                  backgroundColor: Color(widget.category!.colorValue),
                 ),
-          onTap: onOpen,
+          onTap: widget.onOpen,
         ),
       ),
     );
