@@ -45,6 +45,7 @@ class TaskActions {
     required NotificationService notifications,
     required AppSettings settings,
     required Task task,
+    VoidCallback? onChanged,
   }) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -72,6 +73,7 @@ class TaskActions {
                     settings: settings,
                     task: task,
                   );
+                  onChanged?.call();
                 },
               ),
               ListTile(
@@ -89,6 +91,7 @@ class TaskActions {
                       settings: settings,
                     );
                   }
+                  onChanged?.call();
                 },
               ),
               ListTile(
@@ -104,6 +107,7 @@ class TaskActions {
                       settings: settings,
                     );
                   }
+                  onChanged?.call();
                 },
               ),
               ListTile(
@@ -138,6 +142,7 @@ class TaskActions {
                       settings: settings,
                     );
                   }
+                  onChanged?.call();
                 },
               ),
               ListTile(
@@ -157,6 +162,7 @@ class TaskActions {
                       ),
                     ),
                   );
+                  onChanged?.call();
                 },
               ),
               ListTile(
@@ -170,6 +176,7 @@ class TaskActions {
                     notifications: notifications,
                     task: task,
                   );
+                  onChanged?.call();
                 },
               ),
             ],

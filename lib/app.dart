@@ -46,61 +46,61 @@ class _TodoAppState extends State<TodoApp> {
         ThemePreference.system => ThemeMode.system,
       };
 
+  late final List<Widget> _pages = [
+    TodayPage(
+      key: ValueKey('today-$_token'),
+      tasks: widget.tasks,
+      categories: widget.categories,
+      notifications: widget.notifications,
+      settings: _settings,
+      onChanged: _refresh,
+      onOpenSearch: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SearchPage(
+              tasks: widget.tasks,
+              categories: widget.categories,
+              notifications: widget.notifications,
+              settings: _settings,
+              onChanged: _refresh,
+            ),
+          ),
+        );
+        _refresh();
+      },
+    ),
+    UpcomingPage(
+      key: ValueKey('upcoming-$_token'),
+      tasks: widget.tasks,
+      categories: widget.categories,
+      notifications: widget.notifications,
+      settings: _settings,
+      onChanged: _refresh,
+    ),
+    CalendarPage(
+      key: ValueKey('calendar-$_token'),
+      tasks: widget.tasks,
+      categories: widget.categories,
+      notifications: widget.notifications,
+      settings: _settings,
+      onChanged: _refresh,
+    ),
+    SettingsPage(
+      settingsRepo: widget.settingsRepo,
+      notifications: widget.notifications,
+      backup: widget.backup,
+      tasks: widget.tasks,
+      settings: _settings,
+      onSettingsChanged: (value) {
+        setState(() => _settings = value);
+        _refresh();
+      },
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      TodayPage(
-        key: ValueKey('today-$_token'),
-        tasks: widget.tasks,
-        categories: widget.categories,
-        notifications: widget.notifications,
-        settings: _settings,
-        onChanged: _refresh,
-        onOpenSearch: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => SearchPage(
-                tasks: widget.tasks,
-                categories: widget.categories,
-                notifications: widget.notifications,
-                settings: _settings,
-                onChanged: _refresh,
-              ),
-            ),
-          );
-          _refresh();
-        },
-      ),
-      UpcomingPage(
-        key: ValueKey('upcoming-$_token'),
-        tasks: widget.tasks,
-        categories: widget.categories,
-        notifications: widget.notifications,
-        settings: _settings,
-        onChanged: _refresh,
-      ),
-      CalendarPage(
-        key: ValueKey('calendar-$_token'),
-        tasks: widget.tasks,
-        categories: widget.categories,
-        notifications: widget.notifications,
-        settings: _settings,
-        onChanged: _refresh,
-      ),
-      SettingsPage(
-        settingsRepo: widget.settingsRepo,
-        notifications: widget.notifications,
-        backup: widget.backup,
-        tasks: widget.tasks,
-        settings: _settings,
-        onSettingsChanged: (value) {
-          setState(() => _settings = value);
-          _refresh();
-        },
-      ),
-    ];
-
     return MaterialApp(
       title: 'Personal Todo',
       debugShowCheckedModeBanner: false,
@@ -126,7 +126,7 @@ class _TodoAppState extends State<TodoApp> {
         ),
       ),
       home: Scaffold(
-        body: pages[_index],
+        body: _pages[_index],
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),

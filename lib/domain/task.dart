@@ -50,6 +50,7 @@ class Task {
     RecurrenceRule? recurrence,
     int? reminderMinutesBefore,
     String? seriesId,
+    bool clearSeries = false,
     DateTime? updatedAt,
   }) {
     return Task(
@@ -63,7 +64,7 @@ class Task {
       recurrence: recurrence ?? this.recurrence,
       reminderMinutesBefore:
           reminderMinutesBefore ?? this.reminderMinutesBefore,
-      seriesId: seriesId ?? this.seriesId,
+      seriesId: clearSeries ? null : (seriesId ?? this.seriesId),
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

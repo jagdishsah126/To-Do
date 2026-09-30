@@ -102,6 +102,7 @@ class _SearchPageState extends State<SearchPage> {
                 notifications: widget.notifications,
                 settings: widget.settings,
                 task: task,
+                onChanged: () => _search(_controller.text),
               );
               await _search(_controller.text);
               widget.onChanged();

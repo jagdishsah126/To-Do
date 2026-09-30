@@ -108,6 +108,7 @@ class _UpcomingPageState extends State<UpcomingPage> {
                     notifications: widget.notifications,
                     settings: widget.settings,
                     task: task,
+                    onChanged: _refresh,
                   );
                   await _reload();
                   widget.onChanged();

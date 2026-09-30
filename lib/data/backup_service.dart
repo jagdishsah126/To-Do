@@ -68,6 +68,10 @@ class BackupService {
     if (decoded['app'] != 'personal_todo') {
       throw const FormatException('Not a Personal Todo backup.');
     }
+    final version = decoded['version'];
+    if (version != 1) {
+      throw FormatException('Unsupported backup version: $version');
+    }
 
     final taskMaps = (decoded['tasks'] as List?) ?? const [];
     final categoryMaps = (decoded['categories'] as List?) ?? const [];

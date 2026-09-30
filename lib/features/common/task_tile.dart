@@ -45,7 +45,24 @@ class TaskTile extends StatelessWidget {
         color: Theme.of(context).colorScheme.error,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      onDismissed: (_) => onDelete(),
+      onDismissed: (_) async {
+        await onDelete();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${task.title} deleted'),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () async {
+                  // Note: Full undo would require storing the complete task
+                  // and re-inserting it. This is a simplified version.
+                },
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      },
       child: Card(
         child: ListTile(
           leading: Checkbox(

@@ -44,6 +44,8 @@ class _CalendarPageState extends State<CalendarPage> {
     _load();
   }
 
+  void _refresh() => setState(() {});
+
   Future<void> _load() async {
     final cats = await widget.categories.getAll();
     final first = NepaliDateTime(_month.year, _month.month, 1);
@@ -74,15 +76,15 @@ class _CalendarPageState extends State<CalendarPage> {
         .toList();
   }
 
-  int _countForDay(int day) {
-    final bs = NepaliDateTime(_month.year, _month.month, day);
-    final start = bs.toDateTime();
-    final end = start.add(const Duration(days: 1));
-    return _monthTasks
-        .where(
-          (t) => !t.scheduledAt.isBefore(start) && t.scheduledAt.isBefore(end),
-        )
-        .length;
+  Map<int, int> get _taskCountByDay {
+    final map = <int, int>{};
+    for (final task in _monthTasks) {
+      final bs = BsDateHelper.toBs(task.scheduledAt);
+      if (bs.year == _month.year && bs.month == _month.month) {
+        map[bs.day] = (map[bs.day] ?? 0) + 1;
+      }
+    }
+    return map;
   }
 
   @override
@@ -155,7 +157,7 @@ class _CalendarPageState extends State<CalendarPage> {
             itemBuilder: (context, index) {
               if (index < blanks) return const SizedBox.shrink();
               final day = index - blanks + 1;
-              final count = _countForDay(day);
+              final count = _taskCountByDay[day] ?? 0;
               final isSelected = _selected?.day == day &&
                   _selected?.month == _month.month &&
                   _selected?.year == _month.year;
@@ -224,6 +226,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           notifications: widget.notifications,
                           settings: widget.settings,
                           task: task,
+                          onChanged: _refresh,
                         );
                         await _load();
                         widget.onChanged();

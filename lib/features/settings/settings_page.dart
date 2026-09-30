@@ -44,11 +44,20 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _save(AppSettings next) async {
+    final notificationSettingsChanged = 
+        next.notificationsEnabled != _settings.notificationsEnabled ||
+        next.quietHoursEnabled != _settings.quietHoursEnabled ||
+        next.quietStartMinute != _settings.quietStartMinute ||
+        next.quietEndMinute != _settings.quietEndMinute;
+    
     setState(() => _settings = next);
     await widget.settingsRepo.save(next);
     widget.onSettingsChanged(next);
-    final pending = await widget.tasks.getPendingReminders();
-    await widget.notifications.rescheduleAll(pending, next);
+    
+    if (notificationSettingsChanged) {
+      final pending = await widget.tasks.getPendingReminders();
+      await widget.notifications.rescheduleAll(pending, next);
+    }
   }
 
   @override

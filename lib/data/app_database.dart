@@ -58,6 +58,9 @@ class AppDatabase {
     await db.execute(
       'CREATE INDEX idx_tasks_scheduled_at ON tasks(scheduled_at)',
     );
+    await db.execute(
+      'CREATE INDEX idx_tasks_status ON tasks(status)',
+    );
     await db.execute('''
       CREATE TABLE categories (
         id TEXT PRIMARY KEY,

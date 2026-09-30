@@ -27,16 +27,17 @@ class TaskRepository {
   }
 
   Future<List<Task>> getUpcoming({int days = 7}) async {
-    final start = DateTime.now();
-    final end = DateTime(start.year, start.month, start.day)
-        .add(Duration(days: days + 1));
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(Duration(days: days + 1));
     final rows = await (await _db).query(
       'tasks',
-      where: 'scheduled_at >= ? AND scheduled_at < ? AND status != ?',
+      where: 'scheduled_at >= ? AND scheduled_at < ? AND status NOT IN (?, ?)',
       whereArgs: [
         start.toIso8601String(),
         end.toIso8601String(),
         TaskStatus.completed.name,
+        TaskStatus.skipped.name,
       ],
       orderBy: 'scheduled_at ASC',
     );
@@ -54,10 +55,10 @@ class TaskRepository {
   }
 
   Future<List<Task>> search(String query) async {
-    final q = '%${query.trim()}%';
+    final q = '%${query.trim().toLowerCase()}%';
     final rows = await (await _db).query(
       'tasks',
-      where: 'title LIKE ? OR description LIKE ?',
+      where: 'LOWER(title) LIKE ? OR LOWER(description) LIKE ?',
       whereArgs: [q, q],
       orderBy: 'scheduled_at DESC',
       limit: 100,
@@ -102,6 +103,7 @@ class TaskRepository {
     String? categoryId,
     RecurrenceRule recurrence = const RecurrenceRule(),
     int reminderMinutesBefore = 0,
+    String? seriesId,
   }) async {
     final now = DateTime.now();
     final id = AppDatabase.instance.uuid.v4();
@@ -115,7 +117,7 @@ class TaskRepository {
       categoryId: categoryId,
       recurrence: recurrence,
       reminderMinutesBefore: reminderMinutesBefore,
-      seriesId: recurrence.isRecurring ? id : null,
+      seriesId: seriesId ?? (recurrence.isRecurring ? id : null),
       createdAt: now,
       updatedAt: now,
     );
@@ -155,6 +157,7 @@ class TaskRepository {
           categoryId: task.categoryId,
           recurrence: task.recurrence,
           reminderMinutesBefore: task.reminderMinutesBefore,
+          seriesId: task.seriesId ?? task.id,
         );
       }
     }
@@ -182,6 +185,7 @@ class TaskRepository {
           categoryId: task.categoryId,
           recurrence: task.recurrence,
           reminderMinutesBefore: task.reminderMinutesBefore,
+          seriesId: task.seriesId ?? task.id,
         );
       }
     }
@@ -231,12 +235,12 @@ class TaskRepository {
 
   Future<void> replaceAll(List<Task> tasks) async {
     final db = await _db;
-    final batch = db.batch();
-    batch.delete('tasks');
-    for (final task in tasks) {
-      batch.insert('tasks', task.toMap());
-    }
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      await txn.delete('tasks');
+      for (final task in tasks) {
+        await txn.insert('tasks', task.toMap());
+      }
+    });
   }
 
   Future<void> applyMissedPolicy(MissedTaskPolicy policy) async {
@@ -259,10 +263,12 @@ class TaskRepository {
         case MissedTaskPolicy.keepOverdue:
           break;
         case MissedTaskPolicy.moveTomorrow:
+          final tomorrow = DateTime(now.year, now.month, now.day)
+              .add(const Duration(days: 1));
           final moved = DateTime(
-            now.year,
-            now.month,
-            now.day + 1,
+            tomorrow.year,
+            tomorrow.month,
+            tomorrow.day,
             task.scheduledAt.hour,
             task.scheduledAt.minute,
           );
@@ -286,11 +292,11 @@ class CategoryRepository {
 
   Future<void> replaceAll(List<Category> categories) async {
     final db = await _db;
-    final batch = db.batch();
-    batch.delete('categories');
-    for (final c in categories) {
-      batch.insert('categories', c.toMap());
-    }
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      await txn.delete('categories');
+      for (final c in categories) {
+        await txn.insert('categories', c.toMap());
+      }
+    });
   }
 }

@@ -122,6 +122,12 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
       );
       return;
     }
+    if (_scheduledAt.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot schedule tasks in the past.')),
+      );
+      return;
+    }
 
     setState(() => _saving = true);
     try {
@@ -204,11 +210,19 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
               const SizedBox(height: 8),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Date & time'),
+                title: const Text('Date'),
                 subtitle: Text(bsLabel),
                 trailing: const Icon(Icons.edit_calendar),
                 onTap: () async {
                   await _pickDate();
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Time'),
+                subtitle: Text(_time.format(context)),
+                trailing: const Icon(Icons.access_time),
+                onTap: () async {
                   await _pickTime();
                 },
               ),

@@ -34,6 +34,7 @@ class RecurrenceEngine {
   }
 
   DateTime _nextWeekday(DateTime from, List<int> weekdays) {
+    if (weekdays.isEmpty) return from.add(const Duration(days: 1));
     final sorted = [...weekdays]..sort();
     var cursor = from.add(const Duration(days: 1));
     for (var i = 0; i < 14; i++) {
@@ -48,7 +49,7 @@ class RecurrenceEngine {
       }
       cursor = cursor.add(const Duration(days: 1));
     }
-    return from.add(const Duration(days: 1));
+    return cursor;
   }
 
   DateTime _addMonths(DateTime from, int months) {

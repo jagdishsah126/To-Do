@@ -83,7 +83,14 @@ class NotificationService {
     return notificationsEnabled;
   }
 
-  int notificationIdForTask(String taskId) => taskId.hashCode & 0x7fffffff;
+  int notificationIdForTask(String taskId) {
+    var hash = 0;
+    for (var i = 0; i < taskId.length; i++) {
+      hash = ((hash << 5) - hash) + taskId.codeUnitAt(i);
+      hash = hash & 0x7fffffff;
+    }
+    return hash;
+  }
 
   AndroidNotificationDetails get _androidDetails => AndroidNotificationDetails(
         _channelId,
@@ -118,6 +125,7 @@ class NotificationService {
 
   DateTime _applyQuietHours(DateTime when, AppSettings settings) {
     if (!settings.quietHoursEnabled) return when;
+    if (settings.quietStartMinute == settings.quietEndMinute) return when;
 
     final minutes = when.hour * 60 + when.minute;
     final start = settings.quietStartMinute;
@@ -170,10 +178,12 @@ class NotificationService {
   }
 
   Future<void> rescheduleAll(List<Task> tasks, AppSettings settings) async {
-    for (final task in tasks) {
-      await cancelTaskReminder(task.id);
-      await scheduleTaskReminder(task, settings: settings);
-    }
+    await Future.wait(
+      tasks.map((task) async {
+        await cancelTaskReminder(task.id);
+        await scheduleTaskReminder(task, settings: settings);
+      }),
+    );
   }
 
   Future<void> scheduleTestNotification({int seconds = 10}) async {

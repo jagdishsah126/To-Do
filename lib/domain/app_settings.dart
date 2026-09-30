@@ -75,7 +75,7 @@ class AppSettings {
       snoozeMinutes: (map['snoozeMinutes'] ?? '5,10,15,30,60')
           .split(',')
           .map((e) => int.tryParse(e) ?? 0)
-          .where((e) => e > 0)
+          .where((e) => e > 0 && e <= 1440)
           .toList(),
       quietHoursEnabled: (map['quietHoursEnabled'] ?? 'false') == 'true',
       quietStartMinute: int.tryParse(map['quietStartMinute'] ?? '1350') ?? 1350,
