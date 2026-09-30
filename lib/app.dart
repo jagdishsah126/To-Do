@@ -91,6 +91,7 @@ class _TodoAppState extends State<TodoApp> {
     StatisticsPage(
       key: ValueKey('stats-$_token'),
       tasks: widget.tasks,
+      settings: _settings,
     ),
     SettingsPage(
       settingsRepo: widget.settingsRepo,

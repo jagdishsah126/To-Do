@@ -13,6 +13,11 @@ class AppSettings {
     this.missedPolicy = MissedTaskPolicy.keepOverdue,
     this.use24HourClock = false,
     this.accentColor = 0xFF00D4AA,
+    this.fontSize = 1.0,
+    this.streaksEnabled = true,
+    this.backupReminderEnabled = true,
+    this.lastBackupTimestamp,
+    this.carryForwardPolicy = CarryForwardPolicy.keepOverdue,
   });
 
   final ThemePreference theme;
@@ -26,6 +31,11 @@ class AppSettings {
   final MissedTaskPolicy missedPolicy;
   final bool use24HourClock;
   final int accentColor;
+  final double fontSize;
+  final bool streaksEnabled;
+  final bool backupReminderEnabled;
+  final DateTime? lastBackupTimestamp;
+  final CarryForwardPolicy carryForwardPolicy;
 
   AppSettings copyWith({
     ThemePreference? theme,
@@ -39,6 +49,11 @@ class AppSettings {
     MissedTaskPolicy? missedPolicy,
     bool? use24HourClock,
     int? accentColor,
+    double? fontSize,
+    bool? streaksEnabled,
+    bool? backupReminderEnabled,
+    DateTime? lastBackupTimestamp,
+    CarryForwardPolicy? carryForwardPolicy,
   }) {
     return AppSettings(
       theme: theme ?? this.theme,
@@ -53,6 +68,11 @@ class AppSettings {
       missedPolicy: missedPolicy ?? this.missedPolicy,
       use24HourClock: use24HourClock ?? this.use24HourClock,
       accentColor: accentColor ?? this.accentColor,
+      fontSize: fontSize ?? this.fontSize,
+      streaksEnabled: streaksEnabled ?? this.streaksEnabled,
+      backupReminderEnabled: backupReminderEnabled ?? this.backupReminderEnabled,
+      lastBackupTimestamp: lastBackupTimestamp ?? this.lastBackupTimestamp,
+      carryForwardPolicy: carryForwardPolicy ?? this.carryForwardPolicy,
     );
   }
 
@@ -68,6 +88,11 @@ class AppSettings {
         'missedPolicy': missedPolicy.name,
         'use24HourClock': '$use24HourClock',
         'accentColor': '$accentColor',
+        'fontSize': '$fontSize',
+        'streaksEnabled': '$streaksEnabled',
+        'backupReminderEnabled': '$backupReminderEnabled',
+        'lastBackupTimestamp': lastBackupTimestamp?.toIso8601String() ?? '',
+        'carryForwardPolicy': carryForwardPolicy.name,
       };
 
   factory AppSettings.fromStorageMap(Map<String, String> map) {
@@ -89,6 +114,13 @@ class AppSettings {
           MissedTaskPolicy.fromStorage(map['missedPolicy'] ?? 'keepOverdue'),
       use24HourClock: (map['use24HourClock'] ?? 'false') == 'true',
       accentColor: int.tryParse(map['accentColor'] ?? '0xFF00D4AA') ?? 0xFF00D4AA,
+      fontSize: double.tryParse(map['fontSize'] ?? '1.0') ?? 1.0,
+      streaksEnabled: (map['streaksEnabled'] ?? 'true') == 'true',
+      backupReminderEnabled: (map['backupReminderEnabled'] ?? 'true') == 'true',
+      lastBackupTimestamp: map['lastBackupTimestamp'] != null && map['lastBackupTimestamp'].isNotEmpty
+          ? DateTime.tryParse(map['lastBackupTimestamp'])
+          : null,
+      carryForwardPolicy: CarryForwardPolicy.fromStorage(map['carryForwardPolicy'] ?? 'keepOverdue'),
     );
   }
 }

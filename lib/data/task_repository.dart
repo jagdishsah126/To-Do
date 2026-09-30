@@ -1,8 +1,12 @@
 import 'package:personal_todo/data/app_database.dart';
+import 'package:personal_todo/domain/attachment.dart';
 import 'package:personal_todo/domain/category.dart';
 import 'package:personal_todo/domain/enums.dart';
 import 'package:personal_todo/domain/recurrence.dart';
+import 'package:personal_todo/domain/subtask.dart';
+import 'package:personal_todo/domain/tag.dart';
 import 'package:personal_todo/domain/task.dart';
+import 'package:personal_todo/domain/task_note.dart';
 import 'package:personal_todo/services/recurrence_engine.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -280,6 +284,95 @@ class TaskRepository {
       }
     }
   }
+
+  Future<void> applyCarryForward(CarryForwardPolicy policy) async {
+    if (policy == CarryForwardPolicy.askUser) return;
+    final now = DateTime.now();
+    final yesterday = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 1));
+    final rows = await (await _db).query(
+      'tasks',
+      where: 'scheduled_at >= ? AND scheduled_at < ? AND status IN (?, ?)',
+      whereArgs: [
+        yesterday.toIso8601String(),
+        DateTime(now.year, now.month, now.day).toIso8601String(),
+        TaskStatus.upcoming.name,
+        TaskStatus.snoozed.name,
+      ],
+    );
+    for (final row in rows) {
+      final task = Task.fromMap(row);
+      switch (policy) {
+        case CarryForwardPolicy.keepOverdue:
+          break;
+        case CarryForwardPolicy.moveTomorrow:
+          final tomorrow = DateTime(now.year, now.month, now.day)
+              .add(const Duration(days: 1));
+          final moved = DateTime(
+            tomorrow.year,
+            tomorrow.month,
+            tomorrow.day,
+            task.scheduledAt.hour,
+            task.scheduledAt.minute,
+          );
+          await updateTask(
+            task.copyWith(scheduledAt: moved, status: TaskStatus.upcoming),
+          );
+        case CarryForwardPolicy.markMissed:
+          await updateTask(task.copyWith(status: TaskStatus.missed));
+        case CarryForwardPolicy.askUser:
+          break;
+      }
+    }
+  }
+
+  Future<List<Task>> getArchived() async {
+    final rows = await (await _db).query(
+      'tasks',
+      where: 'status = ?',
+      whereArgs: [TaskStatus.cancelled.name],
+      orderBy: 'updated_at DESC',
+    );
+    return rows.map(Task.fromMap).toList();
+  }
+
+  Future<void> archiveTask(String id) async {
+    final task = await getById(id);
+    if (task == null) return;
+    await updateTask(task.copyWith(status: TaskStatus.cancelled));
+  }
+
+  Future<void> restoreTask(String id) async {
+    final task = await getById(id);
+    if (task == null) return;
+    await updateTask(task.copyWith(status: TaskStatus.upcoming));
+  }
+
+  Future<int> getStreakCount() async {
+    final tasks = await getAll();
+    final completedDates = <DateTime>{};
+    for (final task in tasks) {
+      if (task.isCompleted) {
+        completedDates.add(DateTime(
+          task.scheduledAt.year,
+          task.scheduledAt.month,
+          task.scheduledAt.day,
+        ));
+      }
+    }
+    if (completedDates.isEmpty) return 0;
+    final sorted = completedDates.toList()..sort();
+    var streak = 1;
+    for (var i = sorted.length - 1; i > 0; i--) {
+      final diff = sorted[i].difference(sorted[i - 1]).inDays;
+      if (diff == 1) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
 }
 
 class CategoryRepository {
@@ -315,5 +408,186 @@ class CategoryRepository {
         await txn.insert('categories', c.toMap());
       }
     });
+  }
+}
+
+class TagRepository {
+  Future<Database> get _db async => AppDatabase.instance.database;
+
+  Future<List<Tag>> getAll() async {
+    final rows = await (await _db).query('tags', orderBy: 'name ASC');
+    return rows.map(Tag.fromMap).toList();
+  }
+
+  Future<void> create(Tag tag) async {
+    await (await _db).insert('tags', tag.toMap());
+  }
+
+  Future<void> update(Tag tag) async {
+    await (await _db).update(
+      'tags',
+      tag.toMap(),
+      where: 'id = ?',
+      whereArgs: [tag.id],
+    );
+  }
+
+  Future<void> delete(String id) async {
+    await (await _db).delete('tags', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> addToTask(String taskId, String tagId) async {
+    await (await _db).insert('task_tags', {
+      'task_id': taskId,
+      'tag_id': tagId,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+
+  Future<void> removeFromTask(String taskId, String tagId) async {
+    await (await _db).delete(
+      'task_tags',
+      where: 'task_id = ? AND tag_id = ?',
+      whereArgs: [taskId, tagId],
+    );
+  }
+
+  Future<List<Tag>> getForTask(String taskId) async {
+    final rows = await (await _db).rawQuery(
+      'SELECT t.* FROM tags t INNER JOIN task_tags tt ON t.id = tt.tag_id WHERE tt.task_id = ?',
+      [taskId],
+    );
+    return rows.map(Tag.fromMap).toList();
+  }
+}
+
+class SubtaskRepository {
+  Future<Database> get _db async => AppDatabase.instance.database;
+
+  Future<List<Subtask>> getForTask(String taskId) async {
+    final rows = await (await _db).query(
+      'subtasks',
+      where: 'task_id = ?',
+      whereArgs: [taskId],
+      orderBy: 'created_at ASC',
+    );
+    return rows.map(Subtask.fromMap).toList();
+  }
+
+  Future<void> create(Subtask subtask) async {
+    await (await _db).insert('subtasks', subtask.toMap());
+  }
+
+  Future<void> update(Subtask subtask) async {
+    await (await _db).update(
+      'subtasks',
+      subtask.toMap(),
+      where: 'id = ?',
+      whereArgs: [subtask.id],
+    );
+  }
+
+  Future<void> delete(String id) async {
+    await (await _db).delete('subtasks', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteForTask(String taskId) async {
+    await (await _db).delete('subtasks', where: 'task_id = ?', whereArgs: [taskId]);
+  }
+}
+
+class TaskNoteRepository {
+  Future<Database> get _db async => AppDatabase.instance.database;
+
+  Future<List<TaskNote>> getForTask(String taskId) async {
+    final rows = await (await _db).query(
+      'task_notes',
+      where: 'task_id = ?',
+      whereArgs: [taskId],
+      orderBy: 'created_at DESC',
+    );
+    return rows.map(TaskNote.fromMap).toList();
+  }
+
+  Future<void> create(TaskNote note) async {
+    await (await _db).insert('task_notes', note.toMap());
+  }
+
+  Future<void> update(TaskNote note) async {
+    await (await _db).update(
+      'task_notes',
+      note.toMap(),
+      where: 'id = ?',
+      whereArgs: [note.id],
+    );
+  }
+
+  Future<void> delete(String id) async {
+    await (await _db).delete('task_notes', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteForTask(String taskId) async {
+    await (await _db).delete('task_notes', where: 'task_id = ?', whereArgs: [taskId]);
+  }
+}
+
+class AttachmentRepository {
+  Future<Database> get _db async => AppDatabase.instance.database;
+
+  Future<List<Attachment>> getForTask(String taskId) async {
+    final rows = await (await _db).query(
+      'attachments',
+      where: 'task_id = ?',
+      whereArgs: [taskId],
+      orderBy: 'created_at DESC',
+    );
+    return rows.map(Attachment.fromMap).toList();
+  }
+
+  Future<void> create(Attachment attachment) async {
+    await (await _db).insert('attachments', attachment.toMap());
+  }
+
+  Future<void> delete(String id) async {
+    await (await _db).delete('attachments', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteForTask(String taskId) async {
+    await (await _db).delete('attachments', where: 'task_id = ?', whereArgs: [taskId]);
+  }
+}
+
+class TaskDependencyRepository {
+  Future<Database> get _db async => AppDatabase.instance.database;
+
+  Future<List<String>> getDependencies(String taskId) async {
+    final rows = await (await _db).query(
+      'task_dependencies',
+      where: 'task_id = ?',
+      whereArgs: [taskId],
+    );
+    return rows.map((r) => r['depends_on_task_id'] as String).toList();
+  }
+
+  Future<void> addDependency(String taskId, String dependsOnTaskId) async {
+    await (await _db).insert('task_dependencies', {
+      'task_id': taskId,
+      'depends_on_task_id': dependsOnTaskId,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+
+  Future<void> removeDependency(String taskId, String dependsOnTaskId) async {
+    await (await _db).delete(
+      'task_dependencies',
+      where: 'task_id = ? AND depends_on_task_id = ?',
+      whereArgs: [taskId, dependsOnTaskId],
+    );
+  }
+
+  Future<void> removeAllDependencies(String taskId) async {
+    await (await _db).delete(
+      'task_dependencies',
+      where: 'task_id = ? OR depends_on_task_id = ?',
+      whereArgs: [taskId, taskId],
+    );
   }
 }

@@ -94,3 +94,16 @@ enum MissedTaskPolicy {
         orElse: () => MissedTaskPolicy.keepOverdue,
       );
 }
+
+enum CarryForwardPolicy {
+  keepOverdue,
+  moveTomorrow,
+  markMissed,
+  askUser;
+
+  static CarryForwardPolicy fromStorage(String value) =>
+      CarryForwardPolicy.values.firstWhere(
+        (e) => e.name == value,
+        orElse: () => CarryForwardPolicy.keepOverdue,
+      );
+}

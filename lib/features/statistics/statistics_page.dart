@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:personal_todo/core/bs_date.dart';
 import 'package:personal_todo/data/task_repository.dart';
+import 'package:personal_todo/domain/app_settings.dart';
 import 'package:personal_todo/domain/task.dart';
 
 class StatisticsPage extends StatefulWidget {
-  const StatisticsPage({super.key, required this.tasks});
+  const StatisticsPage({
+    super.key,
+    required this.tasks,
+    required this.settings,
+  });
 
   final TaskRepository tasks;
+  final AppSettings settings;
 
   @override
   State<StatisticsPage> createState() => _StatisticsPageState();
@@ -14,11 +20,17 @@ class StatisticsPage extends StatefulWidget {
 
 class _StatisticsPageState extends State<StatisticsPage> {
   late Future<List<Task>> _future;
+  late Future<int> _streakFuture;
 
   @override
   void initState() {
     super.initState();
+    _load();
+  }
+
+  void _load() {
     _future = widget.tasks.getAll();
+    _streakFuture = widget.tasks.getStreakCount();
   }
 
   @override
@@ -78,6 +90,17 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (widget.settings.streaksEnabled) ...[
+          _sectionTitle('Streaks'),
+          FutureBuilder<int>(
+            future: _streakFuture,
+            builder: (context, snapshot) {
+              final streak = snapshot.data ?? 0;
+              return _statRow('Current streak', '$streak days');
+            },
+          ),
+          const Divider(),
+        ],
         _sectionTitle('Today'),
         _statRow('Total tasks', todayTasks.length),
         _statRow('Completed', todayCompleted),

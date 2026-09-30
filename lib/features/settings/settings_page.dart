@@ -5,6 +5,8 @@ import 'package:personal_todo/data/task_repository.dart';
 import 'package:personal_todo/domain/app_settings.dart';
 import 'package:personal_todo/domain/category.dart';
 import 'package:personal_todo/domain/enums.dart';
+import 'package:personal_todo/features/archive/archive_page.dart';
+import 'package:personal_todo/features/tags/tag_manager_page.dart';
 import 'package:personal_todo/services/notification_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -129,6 +131,21 @@ class _SettingsPageState extends State<SettingsPage> {
                 await _save(_settings.copyWith(accentColor: value));
               }
             },
+          ),
+          ListTile(
+            title: const Text('Font size'),
+            subtitle: Text('${_settings.fontSize.toStringAsFixed(1)}x'),
+            trailing: SizedBox(
+              width: 120,
+              child: Slider(
+                value: _settings.fontSize,
+                min: 0.8,
+                max: 1.5,
+                divisions: 7,
+                label: '${_settings.fontSize.toStringAsFixed(1)}x',
+                onChanged: (v) => _save(_settings.copyWith(fontSize: v)),
+              ),
+            ),
           ),
           const Divider(),
           const ListTile(title: Text('Calendar')),
@@ -298,6 +315,32 @@ class _SettingsPageState extends State<SettingsPage> {
               );
             },
           ),
+          SwitchListTile(
+            title: const Text('Show streaks'),
+            value: _settings.streaksEnabled,
+            onChanged: (v) => _save(_settings.copyWith(streaksEnabled: v)),
+          ),
+          SwitchListTile(
+            title: const Text('Backup reminder'),
+            subtitle: Text(_settings.backupReminderEnabled ? 'Enabled' : 'Disabled'),
+            value: _settings.backupReminderEnabled,
+            onChanged: (v) => _save(_settings.copyWith(backupReminderEnabled: v)),
+          ),
+          ListTile(
+            title: const Text('Carry-forward policy'),
+            subtitle: Text(_settings.carryForwardPolicy.name),
+            onTap: () async {
+              final value = await _pickEnum<CarryForwardPolicy>(
+                title: 'Carry-forward',
+                values: CarryForwardPolicy.values,
+                labelOf: (e) => e.name,
+                current: _settings.carryForwardPolicy,
+              );
+              if (value != null) {
+                await _save(_settings.copyWith(carryForwardPolicy: value));
+              }
+            },
+          ),
           const Divider(),
           const ListTile(title: Text('Categories')),
           ..._categories.map(
@@ -322,6 +365,29 @@ class _SettingsPageState extends State<SettingsPage> {
             leading: const Icon(Icons.add),
             title: const Text('Add category'),
             onTap: _addCategory,
+          ),
+          ListTile(
+            leading: const Icon(Icons.label),
+            title: const Text('Manage tags'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TagManagerPage(tags: TagRepository()),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.archive),
+            title: const Text('Archived tasks'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ArchivePage(
+                  tasks: widget.tasks,
+                  notifications: widget.notifications,
+                ),
+              ),
+            ),
           ),
           const Divider(),
           const ListTile(title: Text('Data')),
