@@ -41,6 +41,8 @@ class _TodayPageState extends State<TodayPage> {
     _reload();
   }
 
+  void _refresh() => setState(() {});
+
   Future<void> _reload() async {
     final cats = await widget.categories.getAll();
     await widget.tasks.applyMissedPolicy(widget.settings.missedPolicy);

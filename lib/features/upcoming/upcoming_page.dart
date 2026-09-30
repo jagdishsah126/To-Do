@@ -39,6 +39,8 @@ class _UpcomingPageState extends State<UpcomingPage> {
     _reload();
   }
 
+  void _refresh() => setState(() {});
+
   Future<void> _reload() async {
     final cats = await widget.categories.getAll();
     setState(() {

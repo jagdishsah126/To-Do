@@ -21,7 +21,7 @@ class TaskTile extends StatelessWidget {
   final Category? category;
   final VoidCallback onToggleComplete;
   final VoidCallback onOpen;
-  final VoidCallback onDelete;
+  final Future<void> Function() onDelete;
 
   @override
   Widget build(BuildContext context) {
