@@ -6,6 +6,7 @@ import 'package:personal_todo/domain/category.dart';
 import 'package:personal_todo/domain/task.dart';
 import 'package:personal_todo/features/common/task_actions.dart';
 import 'package:personal_todo/features/common/task_tile.dart';
+import 'package:personal_todo/features/quick_add/quick_add_dialog.dart';
 import 'package:personal_todo/features/task_editor/task_editor_page.dart';
 import 'package:personal_todo/services/notification_service.dart';
 
@@ -178,6 +179,7 @@ class _TodayPageState extends State<TodayPage> {
         icon: const Icon(Icons.add),
         label: const Text('Add Task'),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

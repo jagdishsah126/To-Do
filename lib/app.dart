@@ -5,8 +5,10 @@ import 'package:personal_todo/data/task_repository.dart';
 import 'package:personal_todo/domain/app_settings.dart';
 import 'package:personal_todo/domain/enums.dart';
 import 'package:personal_todo/features/calendar/calendar_page.dart';
+import 'package:personal_todo/features/history/history_page.dart';
 import 'package:personal_todo/features/search/search_page.dart';
 import 'package:personal_todo/features/settings/settings_page.dart';
+import 'package:personal_todo/features/statistics/statistics_page.dart';
 import 'package:personal_todo/features/today/today_page.dart';
 import 'package:personal_todo/features/upcoming/upcoming_page.dart';
 import 'package:personal_todo/services/notification_service.dart';
@@ -85,6 +87,10 @@ class _TodoAppState extends State<TodoApp> {
       notifications: widget.notifications,
       settings: _settings,
       onChanged: _refresh,
+    ),
+    StatisticsPage(
+      key: ValueKey('stats-$_token'),
+      tasks: widget.tasks,
     ),
     SettingsPage(
       settingsRepo: widget.settingsRepo,
@@ -282,6 +288,11 @@ class _TodoAppState extends State<TodoApp> {
                 icon: Icon(Icons.calendar_month_outlined),
                 selectedIcon: Icon(Icons.calendar_month),
                 label: 'Calendar',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.bar_chart),
+                selectedIcon: Icon(Icons.bar_chart),
+                label: 'Stats',
               ),
               NavigationDestination(
                 icon: Icon(Icons.settings_outlined),

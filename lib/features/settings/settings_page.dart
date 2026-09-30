@@ -96,6 +96,40 @@ class _SettingsPageState extends State<SettingsPage> {
             value: _settings.use24HourClock,
             onChanged: (v) => _save(_settings.copyWith(use24HourClock: v)),
           ),
+          ListTile(
+            title: const Text('Accent color'),
+            subtitle: Text(_accentColorName(_settings.accentColor)),
+            trailing: CircleAvatar(
+              radius: 14,
+              backgroundColor: Color(_settings.accentColor),
+            ),
+            onTap: () async {
+              final colors = [0xFF00D4AA, 0xFF6C63FF, 0xFFFF6B6B, 0xFF4ECDC4, 0xFFFFE66D, 0xFFA8E6CF];
+              final value = await showDialog<int>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Accent color'),
+                  content: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: colors.map((c) => InkWell(
+                      onTap: () => Navigator.pop(context, c),
+                      child: CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Color(c),
+                        child: _settings.accentColor == c
+                            ? const Icon(Icons.check, color: Colors.white)
+                            : null,
+                      ),
+                    )).toList(),
+                  ),
+                ),
+              );
+              if (value != null) {
+                await _save(_settings.copyWith(accentColor: value));
+              }
+            },
+          ),
           const Divider(),
           const ListTile(title: Text('Calendar')),
           ListTile(
@@ -379,6 +413,18 @@ class _SettingsPageState extends State<SettingsPage> {
     final h = minuteOfDay ~/ 60;
     final m = minuteOfDay % 60;
     return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+  }
+
+  String _accentColorName(int color) {
+    return switch (color) {
+      0xFF00D4AA => 'Teal',
+      0xFF6C63FF => 'Purple',
+      0xFFFF6B6B => 'Red',
+      0xFF4ECDC4 => 'Cyan',
+      0xFFFFE66D => 'Yellow',
+      0xFFA8E6CF => 'Mint',
+      _ => 'Custom',
+    };
   }
 
   Future<T?> _pickEnum<T>({

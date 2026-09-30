@@ -12,6 +12,7 @@ class AppSettings {
     this.quietEndMinute = 7 * 60,
     this.missedPolicy = MissedTaskPolicy.keepOverdue,
     this.use24HourClock = false,
+    this.accentColor = 0xFF00D4AA,
   });
 
   final ThemePreference theme;
@@ -24,6 +25,7 @@ class AppSettings {
   final int quietEndMinute;
   final MissedTaskPolicy missedPolicy;
   final bool use24HourClock;
+  final int accentColor;
 
   AppSettings copyWith({
     ThemePreference? theme,
@@ -36,6 +38,7 @@ class AppSettings {
     int? quietEndMinute,
     MissedTaskPolicy? missedPolicy,
     bool? use24HourClock,
+    int? accentColor,
   }) {
     return AppSettings(
       theme: theme ?? this.theme,
@@ -49,6 +52,7 @@ class AppSettings {
       quietEndMinute: quietEndMinute ?? this.quietEndMinute,
       missedPolicy: missedPolicy ?? this.missedPolicy,
       use24HourClock: use24HourClock ?? this.use24HourClock,
+      accentColor: accentColor ?? this.accentColor,
     );
   }
 
@@ -63,6 +67,7 @@ class AppSettings {
         'quietEndMinute': '$quietEndMinute',
         'missedPolicy': missedPolicy.name,
         'use24HourClock': '$use24HourClock',
+        'accentColor': '$accentColor',
       };
 
   factory AppSettings.fromStorageMap(Map<String, String> map) {
@@ -83,6 +88,7 @@ class AppSettings {
       missedPolicy:
           MissedTaskPolicy.fromStorage(map['missedPolicy'] ?? 'keepOverdue'),
       use24HourClock: (map['use24HourClock'] ?? 'false') == 'true',
+      accentColor: int.tryParse(map['accentColor'] ?? '0xFF00D4AA') ?? 0xFF00D4AA,
     );
   }
 }
