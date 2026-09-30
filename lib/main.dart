@@ -49,6 +49,8 @@ Future<void> main() async {
             if (next != null) {
               await notifications.scheduleTaskReminder(next, settings: settings);
             }
+          default:
+            debugPrint('Notification tapped: $taskId');
         }
       } catch (e) {
         debugPrint('Notification action failed: $e');

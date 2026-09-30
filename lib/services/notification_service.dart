@@ -43,6 +43,9 @@ class NotificationService {
       onDidReceiveNotificationResponse: (response) async {
         await onAction?.call(response.actionId ?? 'tap', response.payload);
       },
+      onDidReceiveBackgroundNotificationResponse: (response) async {
+        await onAction?.call(response.actionId ?? 'tap', response.payload);
+      },
     );
 
     final android = _plugin.resolvePlatformSpecificImplementation<
