@@ -6,6 +6,7 @@ import 'package:personal_todo/data/backup_service.dart';
 import 'package:personal_todo/data/settings_repository.dart';
 import 'package:personal_todo/data/task_repository.dart';
 import 'package:personal_todo/services/notification_service.dart';
+import 'package:personal_todo/services/warning_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,17 +68,20 @@ Future<void> main() async {
           }
         } catch (e) {
           debugPrint('Notification action failed: $e');
+          await WarningService.instance.logError('NotificationAction', 'Action failed for task $taskId', e);
         }
       },
     );
   } catch (e) {
     debugPrint('Notification init failed: $e');
+    await WarningService.instance.logError('Notification', 'Init failed', e);
   }
 
   try {
     await notifications.requestPermission();
   } catch (e) {
     debugPrint('Notification permission failed: $e');
+    await WarningService.instance.logError('Notification', 'Permission request failed', e);
   }
 
   try {
@@ -99,6 +103,7 @@ Future<void> main() async {
   } catch (e, stack) {
     debugPrint('App init failed: $e');
     debugPrint('Stack: $stack');
+    await WarningService.instance.logError('AppInit', 'App initialization failed', e);
     runApp(_ErrorApp('App initialization failed: $e'));
   }
 }

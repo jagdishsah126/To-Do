@@ -7,7 +7,9 @@ import 'package:personal_todo/domain/category.dart';
 import 'package:personal_todo/domain/enums.dart';
 import 'package:personal_todo/features/archive/archive_page.dart';
 import 'package:personal_todo/features/tags/tag_manager_page.dart';
+import 'package:personal_todo/features/warnings/warnings_page.dart';
 import 'package:personal_todo/services/notification_service.dart';
+import 'package:personal_todo/services/warning_service.dart';
 import 'package:uuid/uuid.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -389,6 +391,17 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
           ),
+          ListTile(
+            leading: const Icon(Icons.warning_amber),
+            title: const Text('View warnings'),
+            subtitle: Text('${WarningService.instance.getWarningCount()} warnings'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const WarningsPage(),
+              ),
+            ),
+          ),
           const Divider(),
           const ListTile(title: Text('Data')),
           ListTile(
@@ -399,6 +412,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 await widget.backup.exportToFile();
               } catch (e) {
                 if (!context.mounted) return;
+                await WarningService.instance.logError('Backup', 'Export failed', e);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Export failed: $e')),
                 );
@@ -419,6 +433,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 );
               } catch (e) {
                 if (!context.mounted) return;
+                await WarningService.instance.logError('Backup', 'Import failed', e);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Import failed: $e')),
                 );

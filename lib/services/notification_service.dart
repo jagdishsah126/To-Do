@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:personal_todo/domain/app_settings.dart';
 import 'package:personal_todo/domain/task.dart';
+import 'package:personal_todo/services/warning_service.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -69,8 +70,9 @@ class NotificationService {
     try {
       final name = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(name));
-    } catch (_) {
+    } catch (e) {
       tz.setLocalLocation(tz.getLocation('Asia/Kathmandu'));
+      WarningService.instance.logWarning('Notification', 'Failed to get local timezone, using Asia/Kathmandu', e);
     }
   }
 

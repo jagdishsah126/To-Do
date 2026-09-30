@@ -8,6 +8,7 @@ import 'package:personal_todo/domain/enums.dart';
 import 'package:personal_todo/domain/recurrence.dart';
 import 'package:personal_todo/domain/task.dart';
 import 'package:personal_todo/services/notification_service.dart';
+import 'package:personal_todo/services/warning_service.dart';
 
 class TaskEditorPage extends StatefulWidget {
   const TaskEditorPage({
@@ -170,6 +171,7 @@ class _TaskEditorPageState extends State<TaskEditorPage> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
+      await WarningService.instance.logError('TaskEditor', 'Failed to save task', e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not save: $e')),
       );
