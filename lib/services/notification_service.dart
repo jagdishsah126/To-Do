@@ -52,7 +52,7 @@ class NotificationService {
     final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await android?.createNotificationChannel(
-      AndroidNotificationChannel(
+      const AndroidNotificationChannel(
         _channelId,
         _channelName,
         description: _channelDescription,
@@ -60,11 +60,6 @@ class NotificationService {
         playSound: true,
         enableVibration: true,
         showBadge: true,
-        sound: const RawResourceAndroidNotificationSound('notification'),
-        enableLights: true,
-        ledColor: const Color(0xFF00D4AA),
-        ledOnMs: 1000,
-        ledOffMs: 500,
       ),
     );
 
