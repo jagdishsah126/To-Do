@@ -52,7 +52,7 @@ class NotificationService {
     final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await android?.createNotificationChannel(
-      const AndroidNotificationChannel(
+      AndroidNotificationChannel(
         _channelId,
         _channelName,
         description: _channelDescription,
@@ -60,6 +60,11 @@ class NotificationService {
         playSound: true,
         enableVibration: true,
         showBadge: true,
+        sound: const RawResourceAndroidNotificationSound('notification'),
+        enableLights: true,
+        ledColor: const Color(0xFF00D4AA),
+        ledOnMs: 1000,
+        ledOffMs: 500,
       ),
     );
 
@@ -86,6 +91,28 @@ class NotificationService {
         await android?.requestNotificationsPermission() ?? false;
     await android?.requestExactAlarmsPermission();
     return notificationsEnabled;
+  }
+
+  Future<bool> areNotificationsEnabled() async {
+    if (!_ready) return false;
+    if (!Platform.isAndroid) return true;
+
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    return await android?.areNotificationsEnabled() ?? false;
+  }
+
+  Future<void> cancelAll() async {
+    if (!_ready) return;
+    await _plugin.cancelAll();
+  }
+
+  Future<List<int>> getPendingNotificationIds() async {
+    if (!_ready) return [];
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    final pending = await android?.pendingNotificationRequests() ?? [];
+    return pending.map((r) => r.id).toList();
   }
 
   int notificationIdForTask(String taskId) {
@@ -158,6 +185,9 @@ class NotificationService {
     if (!_ready) return;
     if (task.isCompleted) return;
     if (settings != null && !settings.notificationsEnabled) return;
+
+    final enabled = await areNotificationsEnabled();
+    if (!enabled) return;
 
     var when = task.reminderAt;
     if (settings != null) {
