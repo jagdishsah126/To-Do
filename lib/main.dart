@@ -20,7 +20,7 @@ Future<void> main() async {
     await AppDatabase.instance.database;
   } catch (e, stack) {
     debugPrint('Database init failed: $e');
-    debugPrint('Stack: $stack);
+    debugPrint('Stack: $stack');
     runApp(const _ErrorApp('Database initialization failed.\nPlease reinstall the app.'));
     return;
   }
